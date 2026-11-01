@@ -139,7 +139,10 @@ function CategoryTooltip({ active, payload }) {
 function CategoryChart({ rows }) {
   return (
     <section className="panel" aria-labelledby="category-heading">
-      <h2 id="category-heading">Sales by category</h2>
+      <div>
+        <h2 id="category-heading">Sales by category</h2>
+        <p className="small muted">Item sales, before coupons and shipping</p>
+      </div>
       <div className="chart chart-tall" role="img" aria-label="Revenue by category, highest first. The same figures are in the table below.">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 28, bottom: 0, left: 0 }}>
@@ -232,7 +235,10 @@ export default function Dashboard() {
         <div className="stack">
           {statuses.data && <StatusBreakdown rows={statuses.data} />}
           <section className="panel" aria-labelledby="top-heading">
-            <h2 id="top-heading">Top products</h2>
+            <div>
+              <h2 id="top-heading">Top products</h2>
+              <p className="small muted">Item sales, before coupons and shipping</p>
+            </div>
             <div className="table-scroll">
               <table className="table">
                 <thead><tr><th>Product</th><th className="num">Units</th><th className="num">Revenue</th></tr></thead>

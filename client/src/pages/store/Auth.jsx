@@ -16,19 +16,21 @@ function useAfterAuth() {
   const navigate = useNavigate();
   const location = useLocation();
   return (account) => {
-    const destination = location.state?.from ?? (account.role === 'admin' ? '/admin' : '/');
-    navigate(destination, { replace: true });
+    const isAdmin = account.role === 'admin';
+    const from = location.state?.from;
+    // A student who followed a link to the admin area shouldn't be returned to it.
+    const usable = from && (isAdmin || !from.startsWith('/admin'));
+    navigate(usable ? from : isAdmin ? '/admin' : '/', { replace: true });
   };
 }
 
-function RedirectIfLoggedIn() {
+/** Sends someone who is already logged in away from these pages. "busy" means this form is logging in. */
+function RedirectIfLoggedIn({ busy }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (user) navigate('/', { replace: true });
-    // Only checked when the page opens. Login itself navigates through useAfterAuth.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (user && !busy) navigate('/', { replace: true });
+  }, [user, busy, navigate]);
   return null;
 }
 
@@ -50,7 +52,7 @@ export function Login() {
 
   return (
     <div className="container page auth">
-      <RedirectIfLoggedIn />
+      <RedirectIfLoggedIn busy={submit.isPending || submit.isSuccess} />
       <h1>Log in</h1>
       <form
         className="stack"
@@ -105,7 +107,7 @@ export function Register() {
 
   return (
     <div className="container page auth">
-      <RedirectIfLoggedIn />
+      <RedirectIfLoggedIn busy={submit.isPending || submit.isSuccess} />
       <h1>Create an account</h1>
       <form
         className="stack"

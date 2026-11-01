@@ -175,7 +175,11 @@ export default function Cart() {
           <button type="button" className="btn btn-primary btn-large btn-full" disabled={!cart.canCheckout} onClick={() => navigate('/checkout')}>
             Go to checkout
           </button>
-          {!cart.canCheckout && <p className="small stock-low">Fix the items marked above before checking out.</p>}
+          {!cart.canCheckout && (
+            <p className="small stock-low">
+              {cart.couponError ? 'Remove the coupon to continue.' : 'Fix the items marked above before checking out.'}
+            </p>
+          )}
         </aside>
       </div>
     </div>

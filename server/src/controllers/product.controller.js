@@ -1,5 +1,5 @@
 import { Category, Product } from '../models/index.js';
-import { buildProductFilter, searchFilter } from '../services/product.service.js';
+import { buildProductFilter, searchFilter, visibleCategoryCondition } from '../services/product.service.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ok, paginate, uniqueSlug } from '../utils/http.js';
 import { PRODUCT_SORTS } from '../validators/catalog.validators.js';
@@ -23,7 +23,7 @@ export async function listProducts(req, res) {
 }
 
 export async function filterOptions(req, res) {
-  const active = { isActive: true };
+  const active = { isActive: true, ...(await visibleCategoryCondition()) };
   const [brands, semesters, [price], counts, categories] = await Promise.all([
     Product.distinct('brand', active),
     Product.distinct('semesters', active),
@@ -60,7 +60,11 @@ export async function suggestProducts(req, res) {
     ok(res, []);
     return;
   }
-  const products = await Product.find({ isActive: true, $and: searchFilter(q) })
+  const products = await Product.find({
+    isActive: true,
+    ...(await visibleCategoryCondition()),
+    $and: searchFilter(q),
+  })
     .select('name slug brand price images')
     .sort({ soldCount: -1, _id: 1 })
     .limit(6);
@@ -69,17 +73,18 @@ export async function suggestProducts(req, res) {
 
 export async function compareProducts(req, res) {
   const { ids } = req.validated.query;
-  const products = await Product.find({ _id: { $in: ids }, isActive: true }).populate(
-    'category',
-    CATEGORY_FIELDS,
-  );
+  const products = await Product.find({
+    _id: { $in: ids },
+    isActive: true,
+    ...(await visibleCategoryCondition()),
+  }).populate('category', CATEGORY_FIELDS);
   const byId = new Map(products.map((product) => [product._id.toString(), product]));
   ok(res, ids.map((id) => byId.get(id)).filter(Boolean));
 }
 
 async function findBySlug(req) {
   const filter = { slug: req.params.slug };
-  if (!isAdmin(req)) filter.isActive = true;
+  if (!isAdmin(req)) Object.assign(filter, { isActive: true }, await visibleCategoryCondition());
   const product = await Product.findOne(filter).populate('category', CATEGORY_FIELDS);
   if (!product) throw ApiError.notFound('That product was not found.');
   return product;

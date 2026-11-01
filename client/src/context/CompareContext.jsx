@@ -43,6 +43,7 @@ export function CompareProvider({ children }) {
         setItems([...items, { _id, name, slug, image: images?.[0] ?? '' }]);
       },
       remove: (id) => setItems(items.filter((item) => item._id !== id)),
+      keepOnly: (ids) => setItems(items.filter((item) => ids.includes(item._id))),
       clear: () => setItems([]),
     }),
     [items],

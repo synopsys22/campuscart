@@ -2,7 +2,18 @@ import { z } from 'zod';
 import { SETUP_SLOTS } from '../models/index.js';
 import { booleanQuery, objectId, pagination } from './common.js';
 
-const wholeRupees = z.coerce.number().int('Use whole rupees.').min(0, 'Cannot be negative.');
+/**
+ * A whole number sent as a number or as form text. A blank field counts as missing,
+ * because plain coercion would quietly turn it into 0, and a product would sell for free.
+ */
+const wholeNumber = (min, tooLow) =>
+  z.preprocess(
+    (value) => (value === '' || value === null ? undefined : value),
+    z.coerce.number({ message: 'Enter a number.' }).int('Use a whole number.').min(min, tooLow),
+  );
+
+const rupees = wholeNumber(1, 'Must be at least ₹1.');
+const count = wholeNumber(0, 'Cannot be negative.');
 const semesters = z.array(z.number().int().min(1).max(8));
 
 export const PRODUCT_SORTS = {
@@ -44,9 +55,9 @@ const productFields = {
   sku: z.string().trim().min(2, 'Enter a SKU.').max(40),
   description: z.string().trim().min(10, 'Write at least 10 characters.').max(4000),
   category: objectId,
-  price: wholeRupees,
-  mrp: wholeRupees,
-  stock: wholeRupees,
+  price: rupees,
+  mrp: rupees,
+  stock: count,
   highlights: z.array(z.string().trim().min(1).max(200)).max(10),
   tags: z.array(z.string().trim().min(1).max(40)).max(20),
   images: z.array(z.string().trim().min(1).max(500)).max(8),
@@ -59,7 +70,7 @@ const productFields = {
       }),
     )
     .max(60),
-  lowStockThreshold: wholeRupees,
+  lowStockThreshold: count,
   setupSlot: z.enum(SETUP_SLOTS).nullable(),
   semesters,
   isFeatured: z.boolean(),
@@ -76,7 +87,7 @@ const createFields = Object.fromEntries(
 
 export const createProductSchema = z.object(createFields);
 export const updateProductSchema = z.object(productFields).partial();
-export const updateStockSchema = z.object({ stock: wholeRupees });
+export const updateStockSchema = z.object({ stock: count });
 
 const categoryFields = {
   name: z.string().trim().min(2, 'Enter a category name.').max(80),

@@ -10,6 +10,7 @@ export function ProductImage({ src, alt, className = '' }) {
 }
 
 export function StockNote({ product }) {
+  if (product.isActive === false) return <span className="stock stock-out">No longer available</span>;
   if (product.stock === 0) return <span className="stock stock-out">Out of stock</span>;
   if (product.stock <= (product.lowStockThreshold ?? 5)) {
     return <span className="stock stock-low">Only {product.stock} left</span>;

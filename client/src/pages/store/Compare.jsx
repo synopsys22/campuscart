@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { GitCompareArrows, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { productApi } from '../../api/index.js';
 import { ProductImage } from '../../components/product.jsx';
@@ -35,6 +35,12 @@ export default function Compare() {
     queryFn: () => productApi.compare(ids),
     enabled: ids.length > 0,
   });
+
+  // Saved choices can outlive a product, for example after the demo data is reset.
+  useEffect(() => {
+    if (products && products.length < ids.length) compare.keepOnly(products.map((product) => product._id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
 
   if (ids.length === 0) {
     return (

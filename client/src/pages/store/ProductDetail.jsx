@@ -235,8 +235,13 @@ function Reviews({ product }) {
   );
 }
 
+// The key gives each product fresh page state, so a chosen quantity doesn't carry over.
 export default function ProductDetail() {
   const { slug } = useParams();
+  return <ProductPage key={slug} slug={slug} />;
+}
+
+function ProductPage({ slug }) {
   const [qty, setQty] = useState(1);
   const [imageIndex, setImageIndex] = useState(0);
   const cart = useAddToCart();

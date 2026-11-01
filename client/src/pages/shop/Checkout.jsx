@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Banknote, CreditCard, Smartphone } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { orderApi, profileApi } from '../../api/index.js';
 import { AddressForm } from '../../components/AddressForm.jsx';
 import { ProductImage } from '../../components/product.jsx';
-import { ErrorState, FormError, PathCrumbs, SkeletonRows, Spinner } from '../../components/ui.jsx';
+import { ErrorState, PathCrumbs, SkeletonRows, Spinner } from '../../components/ui.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useCart, usePageTitle } from '../../hooks/shop.js';
 import { formatINR, PAYMENT_LABELS } from '../../utils/format.js';
@@ -108,7 +109,7 @@ function PaymentStep({ method, onSelect, onBack, onContinue }) {
   );
 }
 
-function ReviewStep({ cart, address, method, error, isPlacing, onBack, onPlace }) {
+function ReviewStep({ cart, address, method, isPlacing, onBack, onPlace }) {
   return (
     <section className="stack" aria-labelledby="review-heading">
       <h2 id="review-heading">Check your order</h2>
@@ -134,8 +135,6 @@ function ReviewStep({ cart, address, method, error, isPlacing, onBack, onPlace }
           </li>
         ))}
       </ul>
-      <FormError error={error} />
-      {error && <Link to="/cart" className="text-link small">Go back to your cart</Link>}
       <div className="row">
         <button type="button" className="btn btn-quiet" disabled={isPlacing} onClick={onBack}>Back</button>
         <button type="button" className="btn btn-primary btn-large" disabled={isPlacing} onClick={onPlace}>
@@ -178,12 +177,17 @@ export default function Checkout() {
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
+    // The refreshed cart shows what went wrong, such as an item that has just sold out.
+    onError: (failure) => {
+      toast.error(failure.message);
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
   });
 
   if (isLoading) return <div className="container page"><SkeletonRows /></div>;
   if (isError) return <div className="container page"><ErrorState error={error} onRetry={refetch} /></div>;
   if (place.isSuccess) return <Spinner />;
-  if (cart.items.length === 0) return <Navigate to="/cart" replace />;
+  if (!cart.canCheckout) return <Navigate to="/cart" replace />;
 
   return (
     <div className="container page">
@@ -199,7 +203,6 @@ export default function Checkout() {
               cart={cart}
               address={address}
               method={method}
-              error={place.error}
               isPlacing={place.isPending}
               onBack={() => setStep(1)}
               onPlace={() => place.mutate()}

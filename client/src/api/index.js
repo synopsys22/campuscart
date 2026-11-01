@@ -28,6 +28,28 @@ export const tokenStore = {
 
 const http = axios.create({ baseURL: '/api' });
 
+const DEACTIVATED_MESSAGE = 'This account has been deactivated.';
+const sessionEvents = new EventTarget();
+
+/** Calls the listener when the server stops accepting this session. Returns an unsubscribe function. */
+export function onSessionEnded(listener) {
+  sessionEvents.addEventListener('ended', listener);
+  return () => sessionEvents.removeEventListener('ended', listener);
+}
+
+/** Ends the session once if a request shows that the token no longer works. */
+function detectEndedSession(error) {
+  const { response, config } = error;
+  if (!response || !tokenStore.get() || config?.url?.startsWith('/auth/')) return;
+  const rejected =
+    response.status === 401 ||
+    (response.status === 403 && response.data?.message === DEACTIVATED_MESSAGE);
+  if (rejected) {
+    tokenStore.clear();
+    sessionEvents.dispatchEvent(new Event('ended'));
+  }
+}
+
 http.interceptors.request.use((config) => {
   const token = tokenStore.get();
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -46,6 +68,7 @@ http.interceptors.response.use(
       error.fieldErrors = response.data?.errors;
       error.status = response.status;
     }
+    detectEndedSession(error);
     return Promise.reject(error);
   },
 );

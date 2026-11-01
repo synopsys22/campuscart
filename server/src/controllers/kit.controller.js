@@ -8,7 +8,9 @@ const PRODUCT_FIELDS = 'name slug brand price mrp stock images isActive ratingAv
 /** Adds live totals and availability, which are never stored on the kit. */
 function describeKit(kit) {
   const items = kit.items.filter((item) => item.product);
-  const sum = (pick) => items.reduce((total, item) => total + pick(item), 0);
+  // Hidden products can't be added to the cart, so they don't count towards the total.
+  const sellable = items.filter((item) => item.product.isActive);
+  const sum = (pick) => sellable.reduce((total, item) => total + pick(item), 0);
   return {
     ...kit.toObject(),
     items,

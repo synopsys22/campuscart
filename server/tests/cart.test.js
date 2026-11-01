@@ -207,6 +207,8 @@ describe('coupons on the cart', () => {
     const cart = await getCart(bearer);
     expect(cart.pricing.discount).toBe(0);
     expect(cart.couponError).toMatch(/minimum order/i);
+    // Checkout would refuse this coupon, so the cart must not send the student there.
+    expect(cart.canCheckout).toBe(false);
   });
 });
 

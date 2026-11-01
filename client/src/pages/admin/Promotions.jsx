@@ -16,8 +16,19 @@ import { usePageTitle } from '../../hooks/shop.js';
 import { couponSummary, formatDate, formatINR } from '../../utils/format.js';
 import { CheckField, useAdminMutation } from './shared.jsx';
 
-const dateInput = (value) => (value ? new Date(value).toISOString().slice(0, 10) : '');
+/** The local date as a date input expects it. */
+function dateInput(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 const orNull = (value) => (value === '' || value === null || value === undefined ? null : value);
+
+/** A coupon runs from the start of its first local day to the end of its last. */
+const startOfDay = (date) => (date ? new Date(`${date}T00:00:00`).toISOString() : null);
+const endOfDay = (date) => (date ? new Date(`${date}T23:59:59.999`).toISOString() : null);
 
 function couponState(coupon) {
   const now = Date.now();
@@ -61,8 +72,8 @@ function CouponForm({ coupon, onClose }) {
       maxDiscount: orNull(form.maxDiscount),
       usageLimit: orNull(form.usageLimit),
       perUserLimit: orNull(form.perUserLimit),
-      startsAt: orNull(form.startsAt),
-      expiresAt: orNull(form.expiresAt),
+      startsAt: startOfDay(form.startsAt),
+      expiresAt: endOfDay(form.expiresAt),
     });
   };
 
@@ -204,6 +215,9 @@ function KitForm({ kit, onClose }) {
     },
   );
   const errors = save.error?.fieldErrors ?? {};
+  // Errors on a single row arrive under keys such as "items.0.qty".
+  const itemsError =
+    errors.items ?? Object.entries(errors).find(([field]) => field.startsWith('items.'))?.[1];
 
   return (
     <Modal title={kit ? `Edit ${kit.name}` : 'Add a kit'} onClose={onClose} wide>
@@ -246,7 +260,7 @@ function KitForm({ kit, onClose }) {
               <Plus size={14} aria-hidden="true" /> Add product
             </button>
           </div>
-          {errors.items && <p className="field-error">{errors.items}</p>}
+          {itemsError && <p className="field-error">{itemsError}</p>}
         </fieldset>
         <div className="row">
           <CheckField label="Featured on the home page" checked={form.isFeatured} onChange={(isFeatured) => setForm({ ...form, isFeatured })} />

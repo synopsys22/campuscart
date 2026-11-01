@@ -178,6 +178,27 @@ describe('product administration', () => {
     expect(res.body.errors.price).toBeTruthy();
   });
 
+  it('rejects a blank price instead of treating it as zero', async () => {
+    const category = await makeCategory();
+    const { bearer } = await makeAdmin();
+    const res = await api()
+      .post('/api/products')
+      .set('Authorization', bearer)
+      .send({ ...body(category._id), price: '' });
+    expect(res.status).toBe(400);
+    expect(res.body.errors.price).toBeTruthy();
+  });
+
+  it('rejects a price of zero', async () => {
+    const category = await makeCategory();
+    const { bearer } = await makeAdmin();
+    const res = await api()
+      .post('/api/products')
+      .set('Authorization', bearer)
+      .send({ ...body(category._id), price: 0 });
+    expect(res.status).toBe(400);
+  });
+
   it('rejects a category that does not exist', async () => {
     const { bearer } = await makeAdmin();
     const res = await api()
@@ -219,6 +240,39 @@ describe('product administration', () => {
     expect(ok.body.data.stock).toBe(42);
     const bad = await api().patch(`/api/products/${product._id}/stock`).set('Authorization', bearer).send({ stock: -1 });
     expect(bad.status).toBe(400);
+  });
+});
+
+describe('hidden categories', () => {
+  async function hiddenScenario() {
+    const hidden = await makeCategory({ name: 'Hidden', slug: 'hidden', isActive: false });
+    await makeProduct({ name: 'Hidden Widget', slug: 'hidden-widget', category: hidden._id, brand: 'HiddenBrand' });
+    await makeProduct({ name: 'Visible Widget', slug: 'visible-widget' });
+  }
+
+  it('hides their products from the catalog and quick search', async () => {
+    await hiddenScenario();
+    const list = await api().get('/api/products');
+    expect(list.body.data.map((p) => p.name)).toEqual(['Visible Widget']);
+    const direct = await api().get('/api/products?category=hidden');
+    expect(direct.body.data).toEqual([]);
+    const suggest = await api().get('/api/products/suggest?q=widget');
+    expect(suggest.body.data.map((p) => p.name)).toEqual(['Visible Widget']);
+  });
+
+  it('hides their products from product pages and filter options', async () => {
+    await hiddenScenario();
+    expect((await api().get('/api/products/hidden-widget')).status).toBe(404);
+    const filters = await api().get('/api/products/filters');
+    expect(filters.body.data.brands).toEqual(['Acme']);
+  });
+
+  it('still shows them to admins', async () => {
+    await hiddenScenario();
+    const { bearer } = await makeAdmin();
+    const list = await api().get('/api/products?includeInactive=true').set('Authorization', bearer);
+    expect(list.body.data).toHaveLength(2);
+    expect((await api().get('/api/products/hidden-widget').set('Authorization', bearer)).status).toBe(200);
   });
 });
 

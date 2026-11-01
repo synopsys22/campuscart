@@ -14,12 +14,19 @@ export function searchFilter(text) {
   });
 }
 
+/** A condition that leaves out products whose category is hidden from the store. */
+export async function visibleCategoryCondition() {
+  const hidden = await Category.find({ isActive: false }).select('_id');
+  return { category: { $nin: hidden.map((category) => category._id) } };
+}
+
 /** Builds the MongoDB filter from validated catalog query values. */
 export async function buildProductFilter(query, { isAdmin = false } = {}) {
   const filter = {};
   const conditions = [];
 
   if (!(isAdmin && query.includeInactive)) filter.isActive = true;
+  if (!isAdmin) conditions.push(await visibleCategoryCondition());
   if (query.q) conditions.push(...searchFilter(query.q));
 
   if (query.category) {

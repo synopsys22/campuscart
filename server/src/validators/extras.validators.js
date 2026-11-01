@@ -11,7 +11,17 @@ const kitFields = {
   isFeatured: z.boolean().optional(),
   isActive: z.boolean().optional(),
   items: z
-    .array(z.object({ product: objectId, qty: z.coerce.number().int().min(1).max(20).default(1) }))
+    .array(
+      z.object({
+        product: objectId,
+        qty: z.coerce
+          .number()
+          .int()
+          .min(1, 'Enter a quantity for every product.')
+          .max(20, 'Use a quantity of 20 or less.')
+          .default(1),
+      }),
+    )
     .min(1, 'Add at least one product.')
     .max(20),
 };

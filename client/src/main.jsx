@@ -26,7 +26,8 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <BrowserRouter>
+          {/* Without this, a logout renders the old page once with no user, which redirects to login. */}
+          <BrowserRouter useTransitions={false}>
             <AuthProvider>
               <CompareProvider>
                 <App />

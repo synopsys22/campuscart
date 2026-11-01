@@ -86,6 +86,16 @@ describe('project kits', () => {
     expect(list.body.data[0].inStock).toBe(false);
   });
 
+  it('leaves a hidden product out of the total, so the kit matches what reaches the cart', async () => {
+    const { body, sensor } = await kitBody();
+    const { bearer } = await makeAdmin();
+    await api().post('/api/kits').set('Authorization', bearer).send(body);
+    sensor.isActive = false;
+    await sensor.save();
+    const list = await api().get('/api/kits');
+    expect(list.body.data[0]).toMatchObject({ totalPrice: 500, mrpTotal: 600, itemCount: 1, inStock: false });
+  });
+
   it('updates and deletes a kit', async () => {
     const { body } = await kitBody();
     const { bearer } = await makeAdmin();

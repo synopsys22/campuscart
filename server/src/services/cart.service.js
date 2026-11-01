@@ -55,7 +55,8 @@ export async function buildCartView(cart, userId) {
     couponError,
     coupon: coupon && { code: coupon.code, description: coupon.description },
     pricing: calculateTotals(lines, coupon),
-    canCheckout: items.length > 0 && items.every((item) => item.available),
+    // A coupon that no longer applies would be refused when the order is placed.
+    canCheckout: items.length > 0 && items.every((item) => item.available) && !couponError,
   };
 }
 

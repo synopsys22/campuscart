@@ -1,93 +1,67 @@
-// Captures the app for review and for the project documents.
-// Usage: node e2e/screenshots.js <output folder> [base URL]
+// Captures the screenshots used in the README, report and slides.
+// With the app running: node e2e/screenshots.js [base URL] [output folder]
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
 
-const outDir = path.resolve(process.argv[2] ?? 'docs/screenshots');
-const baseURL = process.argv[3] ?? 'http://localhost:5000';
+const baseURL = process.argv[2] ?? 'http://localhost:5000';
+const outDir = path.resolve(process.argv[3] ?? 'docs/screenshots');
 fs.mkdirSync(outDir, { recursive: true });
 
-const PUBLIC_PAGES = [
-  ['home', '/'],
-  ['catalog', '/products'],
-  ['product', '/products/raspberry-pi-5-8-gb'],
-  ['textbook', '/products/introduction-to-algorithms-clrs'],
-  ['kits', '/kits'],
-  ['kit-detail', '/kits/iot-starter-kit'],
-  ['setup-builder', '/setup-builder?demo=1'],
-  ['categories', '/categories'],
-  ['login', '/login'],
-];
-const STUDENT_PAGES = [
-  ['orders', '/account/orders'],
-  ['wishlist', '/wishlist'],
-  ['saved-builds', '/account/setups'],
-];
-const ADMIN_PAGES = [
-  ['admin-dashboard', '/admin'],
-  ['admin-orders', '/admin/orders'],
-  ['admin-products', '/admin/products'],
-  ['admin-inventory', '/admin/inventory?lowStock=true'],
-  ['admin-coupons', '/admin/coupons'],
-  ['admin-users', '/admin/users'],
-];
+const browser = await chromium.launch();
 
-async function login(page, role) {
+async function open(theme, width = 1440, height = 900) {
+  const context = await browser.newContext({
+    viewport: { width, height },
+    colorScheme: theme,
+    // The hero traces appear straight away, rather than being caught mid-draw.
+    reducedMotion: 'reduce',
+  });
+  return context.newPage();
+}
+
+async function shot(page, name, url) {
+  if (url) await page.goto(baseURL + url);
+  await page.waitForLoadState('networkidle');
+  await page.screenshot({ path: path.join(outDir, `${name}.png`) });
+}
+
+async function logIn(page, role) {
   await page.goto(`${baseURL}/login`);
   await page.getByRole('button', { name: `Log in as ${role}` }).click();
   await page.getByRole('button', { name: /Account menu/ }).waitFor();
 }
 
-async function capture(page, name, url, { theme, width, fullPage = true }) {
-  await page.goto(baseURL + url);
-  await page.waitForLoadState('networkidle');
-  const file = path.join(outDir, `${name}-${theme}-${width}.png`);
-  await page.screenshot({ path: file, fullPage });
-}
+const dark = await open('dark');
+await shot(dark, 'home-dark', '/');
+await shot(dark, 'product-dark', '/products/raspberry-pi-5-8-gb');
+await shot(dark, 'kit-detail-dark', '/kits/iot-starter-kit');
+await shot(dark, 'setup-builder-dark', '/setup-builder');
 
-const browser = await chromium.launch();
+await logIn(dark, 'Student');
+await dark.goto(`${baseURL}/kits/hackathon-survival-kit`);
+await dark.getByRole('button', { name: 'Add all to cart' }).click();
+await dark.getByRole('link', { name: 'Cart, 5 items' }).waitFor();
+await shot(dark, 'cart-dark', '/cart');
 
-for (const [theme, width] of [['dark', 1440], ['light', 1440], ['dark', 390]]) {
-  const context = await browser.newContext({
-    viewport: { width, height: 900 },
-    colorScheme: theme,
-    // Full-page capture restarts CSS animations, which would hide the hero traces mid-draw.
-    reducedMotion: 'reduce',
-  });
-  const page = await context.newPage();
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
+await dark.goto(`${baseURL}/account/orders`);
+await dark.getByRole('button', { name: 'Shipped', exact: true }).click();
+await dark.locator('.order-row').first().click();
+await dark.locator('.timeline').waitFor();
+await shot(dark, 'order-tracking-dark');
 
-  for (const [name, url] of PUBLIC_PAGES) await capture(page, name, url, { theme, width });
+await dark.getByRole('button', { name: /Account menu/ }).click();
+await dark.getByRole('button', { name: 'Log out' }).click();
+await logIn(dark, 'Admin');
+await shot(dark, 'admin-dashboard-dark', '/admin');
 
-  await login(page, 'Student');
+const light = await open('light');
+await shot(light, 'catalog-light', '/products');
+await logIn(light, 'Admin');
+await shot(light, 'admin-orders-light', '/admin/orders');
 
-  // A cart with real contents, then the demo student's order in transit.
-  await page.goto(`${baseURL}/kits/hackathon-survival-kit`);
-  await page.getByRole('button', { name: 'Add all to cart' }).click();
-  await page.getByText(/Added \d+ items/).first().waitFor();
-  await capture(page, 'cart', '/cart', { theme, width });
-  await page.goto(`${baseURL}/cart`);
-  await page.getByRole('button', { name: 'Clear cart' }).click();
-
-  for (const [name, url] of STUDENT_PAGES) await capture(page, name, url, { theme, width });
-
-  await page.goto(`${baseURL}/account/orders`);
-  await page.getByRole('button', { name: 'Shipped', exact: true }).click();
-  await page.locator('.order-row').first().click();
-  await page.locator('.timeline').waitFor();
-  await page.waitForTimeout(300);
-  await page.screenshot({ path: path.join(outDir, `order-tracking-${theme}-${width}.png`), fullPage: true });
-
-  await page.getByRole('button', { name: /Account menu/ }).click();
-  await page.getByRole('button', { name: 'Log out' }).click();
-  await login(page, 'Admin');
-  for (const [name, url] of ADMIN_PAGES) await capture(page, name, url, { theme, width });
-
-  await context.close();
-  if (errors.length) console.error(`Page errors in ${theme} ${width}:`, errors);
-}
+const phone = await open('dark', 390, 844);
+await shot(phone, 'home-phone', '/');
 
 await browser.close();
 console.log(`Saved screenshots to ${outDir}`);

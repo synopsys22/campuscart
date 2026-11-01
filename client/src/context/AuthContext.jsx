@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { authApi, tokenStore } from '../api/index.js';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
+import { authApi, onSessionEnded, tokenStore } from '../api/index.js';
 
 const AuthContext = createContext(null);
 
@@ -28,11 +29,24 @@ export function AuthProvider({ children }) {
     staleTime: 5 * 60 * 1000,
   });
 
+  // For example, the demo data was reset, or an admin deactivated this account.
+  useEffect(
+    () =>
+      onSessionEnded(() => {
+        setHasToken(false);
+        queryClient.clear();
+        toast.error('Your session has ended. Please log in again.');
+      }),
+    [queryClient],
+  );
+
   const startSession = useCallback(
     ({ token, user: account }) => {
       tokenStore.set(token);
-      setHasToken(true);
+      // Nothing cached from a previous account may carry over.
+      queryClient.clear();
       queryClient.setQueryData(['me'], account);
+      setHasToken(true);
       return account;
     },
     [queryClient],
