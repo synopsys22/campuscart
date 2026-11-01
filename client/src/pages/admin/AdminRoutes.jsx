@@ -1,4 +1,18 @@
-import { NavLink, Outlet, Route, Routes } from 'react-router-dom';
+import {
+  Boxes,
+  LayoutDashboard,
+  MessageSquare,
+  Package,
+  PackagePlus,
+  ReceiptText,
+  ShieldCheck,
+  Tags,
+  TicketPercent,
+  Users,
+} from 'lucide-react';
+import { Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { RoleBanner, SideNav } from '../../components/Layout.jsx';
+import { Enter } from '../../components/motion.jsx';
 import { NotFound } from '../NotFound.jsx';
 import Dashboard from './Dashboard.jsx';
 import { AdminOrderDetail, AdminOrders } from './Orders.jsx';
@@ -7,27 +21,39 @@ import { AdminCategories, AdminInventory, AdminProducts } from './Products.jsx';
 import { AdminCoupons, AdminKits } from './Promotions.jsx';
 
 const LINKS = [
-  { to: '/admin', label: 'Dashboard', end: true },
-  { to: '/admin/orders', label: 'Orders' },
-  { to: '/admin/products', label: 'Products' },
-  { to: '/admin/inventory', label: 'Inventory' },
-  { to: '/admin/categories', label: 'Categories' },
-  { to: '/admin/kits', label: 'Project Kits' },
-  { to: '/admin/coupons', label: 'Coupons' },
-  { to: '/admin/users', label: 'Users' },
-  { to: '/admin/reviews', label: 'Reviews' },
+  { to: '/admin', label: 'Dashboard', end: true, icon: LayoutDashboard, hint: 'Sales and stock across the whole store.' },
+  { to: '/admin/orders', label: 'Orders', icon: ReceiptText, hint: "Every customer's orders. Move each one forward, or cancel it before it ships." },
+  { to: '/admin/products', label: 'Products', icon: Package, hint: 'Add, edit and hide what the store sells.' },
+  { to: '/admin/inventory', label: 'Inventory', icon: Boxes, hint: 'Update stock levels and act on low-stock alerts.' },
+  { to: '/admin/categories', label: 'Categories', icon: Tags, hint: 'Add and edit the categories products sit in.' },
+  { to: '/admin/kits', label: 'Project Kits', icon: PackagePlus, hint: 'Create and edit Project Kits.' },
+  { to: '/admin/coupons', label: 'Coupons', icon: TicketPercent, hint: 'Create and edit discount codes.' },
+  { to: '/admin/users', label: 'Users', icon: Users, hint: 'Search accounts, change roles, and activate or deactivate them.' },
+  { to: '/admin/reviews', label: 'Reviews', icon: MessageSquare, hint: 'Remove reviews when needed.' },
 ];
 
 function AdminLayout() {
+  const { pathname } = useLocation();
   return (
-    <div className="container page side-layout">
-      <nav className="side-nav" aria-label="Admin">
-        {LINKS.map((link) => (
-          <NavLink key={link.to} to={link.to} end={link.end}>{link.label}</NavLink>
-        ))}
-      </nav>
+    <div className="container page side-layout admin-area">
+      <SideNav
+        label="Admin"
+        links={LINKS}
+        heading={
+          <>
+            <span className="side-avatar"><ShieldCheck size={18} aria-hidden="true" /></span>
+            <span>
+              <strong>Admin panel</strong>
+              <span className="small muted">Store management</span>
+            </span>
+          </>
+        }
+      />
       <div className="side-main">
-        <Outlet />
+        <Enter key={pathname}>
+          <RoleBanner links={LINKS} />
+          <Outlet />
+        </Enter>
       </div>
     </div>
   );

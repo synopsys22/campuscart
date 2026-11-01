@@ -1,58 +1,155 @@
-/* Dark theme: a circuit board. Green solder mask, gold plating, white silkscreen. */
+/*
+ * Midnight Indigo: deep navy surfaces instead of neutral grey, an indigo-to-violet gradient
+ * for actions, and warm coral for deals, which contrasts strongly with the blues.
+ * Green, amber and red appear only when they report a state.
+ */
+
+/* Dark theme */
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0a241d;
-  --surface: #0f2e26;
-  --raised: #153a30;
-  --line: #2a5549;
-  --line-strong: #3f7363;
-  --text: #edf5f0;
-  --muted: #a9c4b9;
-  --accent: #e8b84a;
-  --accent-hover: #f2ca68;
-  --on-accent: #1c1503;
-  --accent-soft: rgba(232, 184, 74, 0.14);
-  --trace: #c9973f;
-  --trace-idle: #3a6657;
-  --success: #6fdca6;
-  --success-soft: rgba(111, 220, 166, 0.14);
-  --warning: #f5ae4e;
-  --warning-soft: rgba(245, 174, 78, 0.14);
-  --danger: #ff8f80;
-  --danger-soft: rgba(255, 143, 128, 0.14);
-  --info: #86c5f5;
-  --info-soft: rgba(134, 197, 245, 0.14);
-  --overlay: rgba(3, 14, 11, 0.72);
-  --shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --bg: #0b1023;
+  --bg-alt: #101733;
+  --surface: #141b38;
+  --raised: #1e2749;
+  --line: #2a3560;
+  --line-strong: #6f7cab;
+  --text: #eef1ff;
+  --muted: #aab3d6;
+  /* Indigo as text, icons and lines. */
+  --accent: #a5b4fc;
+  --accent-hover: #c7d2fe;
+  --accent-soft: rgba(129, 140, 248, 0.18);
+  --accent-faint: rgba(129, 140, 248, 0.08);
+  /* Indigo as a fill behind white text: buttons, badges and selected states. */
+  --accent-fill: #4f46e5;
+  --accent-fill-hover: #4338ca;
+  --accent-gradient: linear-gradient(120deg, #4f46e5, #7c3aed);
+  --accent-gradient-hover: linear-gradient(120deg, #4338ca, #6d28d9);
+  --accent-gradient-bright: linear-gradient(90deg, #818cf8, #c084fc, #ff8a65);
+  --on-accent: #ffffff;
+  --logo-from: #818cf8;
+  --logo-to: #c084fc;
+  /* Deals */
+  --deal: #ffa98f;
+  --deal-soft: rgba(255, 138, 101, 0.16);
+  --deal-fill: #c2410c;
+  /* Hero */
+  --headline: linear-gradient(115deg, #ffffff 30%, #c7d2fe 65%, #e9b8ff);
+  --aurora-1: rgba(99, 102, 241, 0.42);
+  --aurora-2: rgba(168, 85, 247, 0.3);
+  --aurora-3: rgba(255, 122, 89, 0.08);
+  --hero-dot: rgba(170, 179, 214, 0.1);
+  --board: rgba(20, 27, 56, 0.86);
+  --pulse: #e9d5ff;
+  --trace: #818cf8;
+  --trace-idle: #3a4570;
+  --hue-strength: 72%;
+  --chart-1: #818cf8;
+  --glass: rgba(20, 27, 56, 0.78);
+  --header-bg: rgba(11, 16, 35, 0.78);
+  --star: #fbbf24;
+  --success: #4ade9f;
+  --success-soft: rgba(74, 222, 159, 0.14);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.14);
+  --danger: #ff93a6;
+  --danger-soft: rgba(255, 147, 166, 0.14);
+  --info: #7dd3fc;
+  --info-soft: rgba(125, 211, 252, 0.14);
+  --overlay: rgba(6, 9, 24, 0.7);
+  --shadow-sm: 0 1px 2px rgba(3, 6, 20, 0.5);
+  --shadow-md: 0 8px 24px rgba(3, 6, 20, 0.5);
+  --shadow-lift: 0 16px 40px -10px rgba(3, 6, 20, 0.75), 0 0 0 1px rgba(129, 140, 248, 0.1);
+  --shadow: 0 24px 60px rgba(3, 6, 20, 0.65);
+  --glow-sm: 0 4px 14px rgba(99, 102, 241, 0.35);
+  --glow: 0 10px 34px rgba(99, 102, 241, 0.45);
+  --drop: drop-shadow(0 24px 48px rgba(3, 6, 20, 0.55));
 }
 
-/* Light theme: a printed datasheet. */
+/* Light theme */
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f3f6f3;
+  --bg: #f5f6fe;
+  --bg-alt: #eceefc;
   --surface: #ffffff;
-  --raised: #e8eeea;
-  --line: #cbd8d1;
-  --line-strong: #93aaa0;
-  --text: #0d2a22;
-  --muted: #47625a;
-  --accent: #0f6b52;
-  --accent-hover: #0b5742;
+  --raised: #eef0fb;
+  --line: #dfe2f4;
+  --line-strong: #7f86a8;
+  --text: #12163a;
+  --muted: #4c5277;
+  --accent: #4338ca;
+  --accent-hover: #3730a3;
+  --accent-soft: rgba(79, 70, 229, 0.11);
+  --accent-faint: rgba(79, 70, 229, 0.05);
+  --accent-fill: #4f46e5;
+  --accent-fill-hover: #4338ca;
+  --accent-gradient: linear-gradient(120deg, #4f46e5, #7c3aed);
+  --accent-gradient-hover: linear-gradient(120deg, #4338ca, #6d28d9);
+  --accent-gradient-bright: linear-gradient(90deg, #6366f1, #a855f7, #f97316);
   --on-accent: #ffffff;
-  --accent-soft: rgba(15, 107, 82, 0.1);
-  --trace: #a9761f;
-  --trace-idle: #b4c6bd;
-  --success: #0a6039;
-  --success-soft: rgba(10, 96, 57, 0.1);
-  --warning: #794a05;
-  --warning-soft: rgba(153, 96, 11, 0.12);
-  --danger: #a32416;
-  --danger-soft: rgba(185, 44, 28, 0.09);
-  --info: #0f5288;
-  --info-soft: rgba(19, 95, 155, 0.1);
-  --overlay: rgba(13, 42, 34, 0.5);
-  --shadow: 0 16px 48px rgba(13, 42, 34, 0.18);
+  --logo-from: #4f46e5;
+  --logo-to: #9333ea;
+  --deal: #a8360a;
+  --deal-soft: rgba(234, 88, 12, 0.09);
+  --deal-fill: #c2410c;
+  --headline: linear-gradient(115deg, #12163a 30%, #4338ca 75%, #7c3aed);
+  --aurora-1: rgba(99, 102, 241, 0.24);
+  --aurora-2: rgba(192, 132, 252, 0.24);
+  --aurora-3: rgba(255, 138, 101, 0.2);
+  --hero-dot: rgba(76, 82, 119, 0.13);
+  --board: rgba(255, 255, 255, 0.88);
+  --pulse: #7c3aed;
+  --trace: #6366f1;
+  --trace-idle: #c3c8e6;
+  --hue-strength: 62%;
+  --chart-1: #4f46e5;
+  --glass: rgba(255, 255, 255, 0.84);
+  --header-bg: rgba(245, 246, 254, 0.8);
+  --star: #a16207;
+  --success: #03694c;
+  --success-soft: rgba(4, 120, 87, 0.1);
+  --warning: #92400e;
+  --warning-soft: rgba(217, 119, 6, 0.13);
+  --danger: #be123c;
+  --danger-soft: rgba(190, 18, 60, 0.08);
+  --info: #0369a1;
+  --info-soft: rgba(3, 105, 161, 0.1);
+  --overlay: rgba(18, 22, 58, 0.5);
+  --shadow-sm: 0 1px 2px rgba(30, 27, 90, 0.07), 0 1px 3px rgba(30, 27, 90, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(30, 27, 90, 0.07), 0 12px 28px -4px rgba(30, 27, 90, 0.13);
+  --shadow-lift: 0 18px 40px -12px rgba(49, 46, 129, 0.28);
+  --shadow: 0 24px 60px rgba(30, 27, 90, 0.2);
+  --glow-sm: 0 4px 14px rgba(79, 70, 229, 0.28);
+  --glow: 0 12px 32px rgba(79, 70, 229, 0.32);
+  --drop: drop-shadow(0 20px 36px rgba(49, 46, 129, 0.16));
+}
+
+/*
+ * The admin area swaps the indigo for a warm orange, so it is obvious at a glance
+ * which side of the store you are on. Dark theme first, then light.
+ */
+.admin-area {
+  --accent: #ffb59a;
+  --accent-hover: #ffd0bd;
+  --accent-soft: rgba(255, 138, 101, 0.16);
+  --accent-faint: rgba(255, 138, 101, 0.07);
+  --accent-fill: #c2410c;
+  --accent-fill-hover: #a8330b;
+  --accent-gradient: linear-gradient(120deg, #c2410c, #a8330b);
+  --accent-gradient-hover: linear-gradient(120deg, #a8330b, #8f2b09);
+  --accent-gradient-bright: linear-gradient(90deg, #ff9d7a, #fbbf24);
+  --chart-1: #ff9d7a;
+  --glow-sm: 0 4px 14px rgba(234, 88, 12, 0.32);
+  --glow: 0 10px 34px rgba(234, 88, 12, 0.4);
+}
+
+:root[data-theme='light'] .admin-area {
+  --accent: #a8360a;
+  --accent-hover: #8a2c08;
+  --accent-soft: rgba(234, 88, 12, 0.1);
+  --accent-faint: rgba(234, 88, 12, 0.05);
+  --chart-1: #c2410c;
 }
 
 :root {
@@ -64,8 +161,9 @@
   --text-md: 1rem;
   --text-lg: 1.1875rem;
   --text-xl: 1.5rem;
+  --text-section: clamp(1.5rem, 2.5vw, 1.875rem);
   --text-2xl: 2rem;
-  --text-3xl: clamp(2.25rem, 5vw, 3.5rem);
+  --text-3xl: clamp(2.5rem, 5.2vw, 3.75rem);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -76,9 +174,12 @@
   --space-7: 3rem;
   --space-8: 4.5rem;
 
-  /* Sharp corners for structure, slightly softer for things you press. */
-  --radius-sm: 3px;
-  --radius-md: 6px;
+  /* One radius per level: small parts, controls, then the cards that hold them. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
+  --radius-full: 999px;
 
   --page-width: 1240px;
   --gutter: clamp(1rem, 3vw, 2rem);

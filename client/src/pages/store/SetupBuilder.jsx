@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useSearchParams } from 'react-router-dom';
 import { cartApi, setupApi } from '../../api/index.js';
+import { AnimatedNumber, useSmoothList } from '../../components/motion.jsx';
 import { ProductImage } from '../../components/product.jsx';
 import { ErrorState, PathCrumbs, Price, SkeletonRows, TextField } from '../../components/ui.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -56,6 +57,7 @@ function BudgetMeter({ total, budget }) {
 
 export default function SetupBuilder() {
   usePageTitle('Build Your Setup');
+  const buildRef = useSmoothList();
   const { user } = useAuth();
   const requireLogin = useRequireLogin();
   const queryClient = useQueryClient();
@@ -149,11 +151,11 @@ export default function SetupBuilder() {
             {picks.length === 0 ? (
               <p className="muted small">Pick something from a slot to start.</p>
             ) : (
-              <ul className="build-list">
+              <ul className="build-list" ref={buildRef}>
                 {picks.map(([slot, product]) => (
                   <li key={slot}>
                     <span>{product.name}</span>
-                    <span className="mono small">{formatINR(product.price)}</span>
+                    <span className="small">{formatINR(product.price)}</span>
                   </li>
                 ))}
               </ul>
@@ -161,7 +163,7 @@ export default function SetupBuilder() {
             <dl className="summary-rows">
               <div className="summary-total">
                 <dt>Total</dt>
-                <dd className="mono" data-testid="setup-total">{formatINR(total)}</dd>
+                <dd data-testid="setup-total"><AnimatedNumber value={total} format={formatINR} /></dd>
               </div>
             </dl>
             <BudgetMeter total={total} budget={Number(budget)} />

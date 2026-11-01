@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-wd-elements-hard-drive-2-tb" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0e7490"/>
-      <stop offset="1" stop-color="#083344"/>
+      <stop offset="0" stop-color="#0f7ab3"/>
+      <stop offset="1" stop-color="#082942"/>
     </linearGradient>
-    <pattern id="dots-wd-elements-hard-drive-2-tb" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-wd-elements-hard-drive-2-tb" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="#66d8f5" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#66d8f5" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-wd-elements-hard-drive-2-tb" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-wd-elements-hard-drive-2-tb)"/>
-  <rect width="400" height="400" fill="url(#dots-wd-elements-hard-drive-2-tb)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><rect x="140" y="100" width="120" height="200" rx="14"/><path d="M170 300v-30h60v30"/><path d="M165 135h70M165 160h40"/><circle cx="200" cy="215" r="24"/></g>
-  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">Western Digital</text>
+  <rect width="400" height="400" fill="url(#light-wd-elements-hard-drive-2-tb)"/>
+  <rect width="400" height="400" fill="url(#glow-wd-elements-hard-drive-2-tb)"/>
+  <g transform="translate(200 200) scale(0.72) translate(-200 -200)" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><rect x="140" y="100" width="120" height="200" rx="14"/><path d="M170 300v-30h60v30"/><path d="M165 135h70M165 160h40"/><circle cx="200" cy="215" r="24"/></g>
 </svg>

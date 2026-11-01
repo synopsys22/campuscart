@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MapPin, MessageSquare, Wrench } from 'lucide-react';
+import { KeyRound, MapPin, MessageSquare, Package, User, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { profileApi, reviewApi, setupApi } from '../../api/index.js';
 import { AddressForm } from '../../components/AddressForm.jsx';
+import { RoleBanner, SideNav } from '../../components/Layout.jsx';
+import { Enter } from '../../components/motion.jsx';
 import {
   ConfirmDialog,
   EmptyState,
@@ -22,24 +24,45 @@ import { formatDate, formatINR } from '../../utils/format.js';
 import { ReviewForm } from '../store/ProductDetail.jsx';
 
 const LINKS = [
-  { to: '/account', label: 'Profile', end: true },
-  { to: '/account/orders', label: 'Orders' },
-  { to: '/account/addresses', label: 'Addresses' },
-  { to: '/account/reviews', label: 'Reviews' },
-  { to: '/account/setups', label: 'Saved builds' },
-  { to: '/account/password', label: 'Password' },
+  { to: '/account', label: 'Profile', end: true, icon: User, hint: 'Your own details.' },
+  { to: '/account/orders', label: 'Orders', icon: Package, hint: 'Only your own orders. Track them, or cancel one before it ships.' },
+  { to: '/account/addresses', label: 'Addresses', icon: MapPin, hint: 'Where your orders can be delivered.' },
+  { to: '/account/reviews', label: 'Reviews', icon: MessageSquare, hint: 'Reviews you have written for products you bought.' },
+  { to: '/account/setups', label: 'Saved builds', icon: Wrench, hint: 'Setups you have saved from Build Your Setup.' },
+  { to: '/account/password', label: 'Password', icon: KeyRound, hint: 'Change the password for your account.' },
 ];
 
+const initialsOf = (name = '') =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0].toUpperCase())
+    .join('');
+
 export function AccountLayout() {
+  const { pathname } = useLocation();
+  const { user, isAdmin } = useAuth();
   return (
     <div className="container page side-layout">
-      <nav className="side-nav" aria-label="Account">
-        {LINKS.map((link) => (
-          <NavLink key={link.to} to={link.to} end={link.end}>{link.label}</NavLink>
-        ))}
-      </nav>
+      <SideNav
+        label="Account"
+        links={LINKS}
+        heading={
+          <>
+            <span className="side-avatar" aria-hidden="true">{initialsOf(user?.name)}</span>
+            <span>
+              <strong>{user?.name}</strong>
+              <span className="small muted">{isAdmin ? 'Admin account' : 'Student account'}</span>
+            </span>
+          </>
+        }
+      />
       <div className="side-main">
-        <Outlet />
+        <Enter key={pathname}>
+          <RoleBanner links={LINKS} />
+          <Outlet />
+        </Enter>
       </div>
     </div>
   );
@@ -347,8 +370,8 @@ export function MySetups() {
             <div>
               <p><strong>{setup.name}</strong></p>
               <p className="small muted">
-                {setup.slots.length} item{setup.slots.length === 1 ? '' : 's'}, total <span className="mono">{formatINR(setup.total)}</span>
-                {setup.budget ? <>, budget <span className="mono">{formatINR(setup.budget)}</span></> : null}
+                {setup.slots.length} item{setup.slots.length === 1 ? '' : 's'}, total <span>{formatINR(setup.total)}</span>
+                {setup.budget ? <>, budget <span>{formatINR(setup.budget)}</span></> : null}
               </p>
               {setup.overBudget && <p className="small stock-low">Over budget by {formatINR(setup.total - setup.budget)}</p>}
             </div>

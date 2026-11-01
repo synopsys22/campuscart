@@ -8,8 +8,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { usePageTitle } from '../../hooks/shop.js';
 
 const DEMO_ACCOUNTS = [
-  { label: 'Student', icon: GraduationCap, email: 'student@campuscart.dev', password: 'Student@123' },
-  { label: 'Admin', icon: ShieldCheck, email: 'admin@campuscart.dev', password: 'Admin@123' },
+  { label: 'Student', icon: GraduationCap, email: 'student@campuscart.dev', password: 'Student@123', purpose: 'Shop, check out and track your own orders.' },
+  { label: 'Admin', icon: ShieldCheck, email: 'admin@campuscart.dev', password: 'Admin@123', purpose: 'Manage products, stock, orders and users.' },
 ];
 
 function useAfterAuth() {
@@ -72,10 +72,13 @@ export function Login() {
       <section className="demo-accounts" aria-labelledby="demo-heading">
         <h2 id="demo-heading" className="small">Try a demo account</h2>
         <div className="demo-buttons">
-          {DEMO_ACCOUNTS.map(({ label, icon: Icon, email, password }) => (
-            <button key={label} type="button" className="btn" disabled={submit.isPending} onClick={() => submit.mutate({ email, password })}>
-              <Icon size={16} aria-hidden="true" /> Log in as {label}
-            </button>
+          {DEMO_ACCOUNTS.map(({ label, icon: Icon, email, password, purpose }) => (
+            <div key={label} className="demo-option">
+              <button type="button" className="btn btn-full" disabled={submit.isPending} onClick={() => submit.mutate({ email, password })}>
+                <Icon size={16} aria-hidden="true" /> Log in as {label}
+              </button>
+              <p className="small muted">{purpose}</p>
+            </div>
           ))}
         </div>
       </section>

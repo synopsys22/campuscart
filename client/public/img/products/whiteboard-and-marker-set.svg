@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-whiteboard-and-marker-set" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#be123c"/>
-      <stop offset="1" stop-color="#4c0519"/>
+      <stop offset="0" stop-color="#d1502f"/>
+      <stop offset="1" stop-color="#40140a"/>
     </linearGradient>
-    <pattern id="dots-whiteboard-and-marker-set" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-whiteboard-and-marker-set" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="#ffb59a" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffb59a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-whiteboard-and-marker-set" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-whiteboard-and-marker-set)"/>
-  <rect width="400" height="400" fill="url(#dots-whiteboard-and-marker-set)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><rect x="95" y="115" width="210" height="150" rx="6"/><path d="M125 150h100M125 180h150M125 210h70"/><path d="M95 290h210"/><path d="M240 225l35 35"/></g>
-  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">Camlin</text>
+  <rect width="400" height="400" fill="url(#light-whiteboard-and-marker-set)"/>
+  <rect width="400" height="400" fill="url(#glow-whiteboard-and-marker-set)"/>
+  <g transform="translate(200 200) scale(0.72) translate(-200 -200)" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><rect x="95" y="115" width="210" height="150" rx="6"/><path d="M125 150h100M125 180h150M125 210h70"/><path d="M95 290h210"/><path d="M240 225l35 35"/></g>
 </svg>

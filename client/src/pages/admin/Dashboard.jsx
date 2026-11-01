@@ -1,4 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
+import { ChevronRight, ClipboardCheck, IndianRupee, PackageX, ReceiptText, ShoppingBag, Users } from 'lucide-react';
+import { useReducedMotion } from 'motion/react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -13,6 +15,7 @@ import {
   YAxis,
 } from 'recharts';
 import { analyticsApi } from '../../api/index.js';
+import { AnimatedNumber, GrowBar, Reveal, staggerDelay } from '../../components/motion.jsx';
 import { ErrorState, SkeletonRows } from '../../components/ui.jsx';
 import { usePageTitle } from '../../hooks/shop.js';
 import { formatINR } from '../../utils/format.js';
@@ -41,7 +44,7 @@ function compactINR(value) {
   return `₹${value}`;
 }
 
-const axisTick = { fill: 'var(--muted)', fontSize: 12, fontFamily: 'var(--font-mono)' };
+const axisTick = { fill: 'var(--muted)', fontSize: 12 };
 
 function RevenueTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
@@ -49,13 +52,14 @@ function RevenueTooltip({ active, payload }) {
   return (
     <div className="chart-tooltip">
       <p className="muted small">{shortDate(date)}</p>
-      <p className="mono">{formatINR(revenue)}</p>
+      <p>{formatINR(revenue)}</p>
       <p className="small muted">{orders} order{orders === 1 ? '' : 's'}</p>
     </div>
   );
 }
 
 function RevenueChart() {
+  const reduce = useReducedMotion();
   const [range, setRange] = useState('30d');
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['analytics-revenue', range],
@@ -68,9 +72,8 @@ function RevenueChart() {
       <div className="row-between">
         <div>
           <h2 id="revenue-heading">Revenue</h2>
-          <p className="small muted">
-            <span className="mono">{formatINR(total)}</span> in the last {range.replace('d', ' days')}, excluding cancelled orders
-          </p>
+          <p className="panel-figure"><AnimatedNumber value={total} format={formatINR} /></p>
+          <p className="small muted">In the last {range.replace('d', ' days')}, excluding cancelled orders</p>
         </div>
         <div className="chip-row" role="group" aria-label="Date range">
           {RANGES.map(([value, label]) => (
@@ -93,11 +96,17 @@ function RevenueChart() {
           <div className="chart" role="img" aria-label={`Daily revenue for the last ${range.replace('d', ' days')}, totalling ${formatINR(total)}`}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data} margin={{ top: 8, right: 28, bottom: 0, left: 0 }}>
+                <defs>
+                  <linearGradient id="revenue-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stopColor="var(--chart-1)" stopOpacity={0.35} />
+                    <stop offset="1" stopColor="var(--chart-1)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid vertical={false} stroke="var(--line)" strokeOpacity={0.6} />
-                <XAxis dataKey="date" tickFormatter={shortDate} tick={axisTick} tickLine={false} axisLine={{ stroke: 'var(--line-strong)' }} minTickGap={40} />
+                <XAxis dataKey="date" tickFormatter={shortDate} tick={axisTick} tickLine={false} axisLine={false} minTickGap={40} />
                 <YAxis tickFormatter={compactINR} tick={axisTick} tickLine={false} axisLine={false} width={52} />
                 <Tooltip content={<RevenueTooltip />} cursor={{ stroke: 'var(--muted)', strokeDasharray: '3 3' }} />
-                <Area type="monotone" dataKey="revenue" stroke="var(--accent)" strokeWidth={2} fill="var(--accent-soft)" activeDot={{ r: 5, stroke: 'var(--surface)', strokeWidth: 2 }} isAnimationActive={false} />
+                <Area type="monotone" dataKey="revenue" stroke="var(--chart-1)" strokeWidth={2} fill="url(#revenue-fill)" activeDot={{ r: 5, stroke: 'var(--surface)', strokeWidth: 2 }} isAnimationActive={!reduce} animationDuration={700} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -110,8 +119,8 @@ function RevenueChart() {
                   {data.map((row) => (
                     <tr key={row.date}>
                       <td>{shortDate(row.date)}</td>
-                      <td className="num mono">{row.orders}</td>
-                      <td className="num mono">{formatINR(row.revenue)}</td>
+                      <td className="num">{row.orders}</td>
+                      <td className="num">{formatINR(row.revenue)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -130,13 +139,14 @@ function CategoryTooltip({ active, payload }) {
   return (
     <div className="chart-tooltip">
       <p className="muted small">{category}</p>
-      <p className="mono">{formatINR(revenue)}</p>
+      <p>{formatINR(revenue)}</p>
       <p className="small muted">{units} units</p>
     </div>
   );
 }
 
 function CategoryChart({ rows }) {
+  const reduce = useReducedMotion();
   return (
     <section className="panel" aria-labelledby="category-heading">
       <div>
@@ -148,9 +158,9 @@ function CategoryChart({ rows }) {
           <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 28, bottom: 0, left: 0 }}>
             <CartesianGrid horizontal={false} stroke="var(--line)" strokeOpacity={0.6} />
             <XAxis type="number" tickFormatter={compactINR} tick={axisTick} tickLine={false} axisLine={false} />
-            <YAxis type="category" dataKey="category" width={132} tick={{ fill: 'var(--text)', fontSize: 12 }} tickLine={false} axisLine={{ stroke: 'var(--line-strong)' }} interval={0} />
+            <YAxis type="category" dataKey="category" width={132} tick={{ fill: 'var(--text)', fontSize: 12 }} tickLine={false} axisLine={false} interval={0} />
             <Tooltip content={<CategoryTooltip />} cursor={{ fill: 'var(--raised)' }} />
-            <Bar dataKey="revenue" fill="var(--accent)" radius={[0, 4, 4, 0]} barSize={14} isAnimationActive={false} />
+            <Bar dataKey="revenue" fill="var(--chart-1)" radius={[0, 4, 4, 0]} barSize={14} isAnimationActive={!reduce} animationDuration={700} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -163,8 +173,8 @@ function CategoryChart({ rows }) {
               {rows.map((row) => (
                 <tr key={row.category}>
                   <td>{row.category}</td>
-                  <td className="num mono">{row.units}</td>
-                  <td className="num mono">{formatINR(row.revenue)}</td>
+                  <td className="num">{row.units}</td>
+                  <td className="num">{formatINR(row.revenue)}</td>
                 </tr>
               ))}
             </tbody>
@@ -185,13 +195,26 @@ function StatusBreakdown({ rows }) {
           <li key={row.status}>
             <span>{row.status}</span>
             <span className="rating-bar" aria-hidden="true">
-              <span style={{ width: total ? `${(row.count / total) * 100}%` : 0, background: STATUS_COLORS[row.status] }} />
+              <GrowBar percent={total ? (row.count / total) * 100 : 0} color={STATUS_COLORS[row.status]} />
             </span>
-            <span className="mono num-cell">{row.count}</span>
+            <span className="num-cell">{row.count}</span>
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+function AttentionCard({ to, icon: Icon, count, label }) {
+  return (
+    <Link to={to} className={`attention-card ${count > 0 ? 'attention-card-on' : ''}`}>
+      <span className="attention-icon" aria-hidden="true">
+        <Icon size={20} strokeWidth={1.75} />
+      </span>
+      <span className="attention-count">{count}</span>
+      <span>{label}</span>
+      <ChevronRight className="attention-arrow" size={18} aria-hidden="true" />
+    </Link>
   );
 }
 
@@ -212,20 +235,30 @@ export default function Dashboard() {
       {!s ? (
         <SkeletonRows count={1} />
       ) : (
-        <dl className="kpi-row">
-          <div className="kpi"><dt>Revenue</dt><dd>{formatINR(s.revenue)}</dd></div>
-          <div className="kpi"><dt>Orders</dt><dd>{s.orders}</dd></div>
-          <div className="kpi"><dt>Average order</dt><dd>{formatINR(s.averageOrderValue)}</dd></div>
-          <div className="kpi"><dt>Customers</dt><dd>{s.customers}</dd></div>
-          <div className="kpi">
-            <dt><Link to="/admin/orders?status=Pending" className="text-link">Orders to confirm</Link></dt>
-            <dd>{s.pendingOrders}</dd>
-          </div>
-          <div className="kpi">
-            <dt><Link to="/admin/inventory?lowStock=true" className="text-link">Low on stock</Link></dt>
-            <dd>{s.lowStockCount}</dd>
-          </div>
-        </dl>
+        <>
+          <dl className="kpi-row">
+            {[
+              { label: 'Revenue', value: s.revenue, format: formatINR, icon: IndianRupee, hue: '#6d83ff' },
+              { label: 'Orders', value: s.orders, format: String, icon: ReceiptText, hue: '#9b7bff' },
+              { label: 'Average order', value: s.averageOrderValue, format: formatINR, icon: ShoppingBag, hue: '#2fb8e6' },
+              { label: 'Customers', value: s.customers, format: String, icon: Users, hue: '#ff7f5e' },
+            ].map(({ label, value, format, icon: Icon, hue }, index) => (
+              <Reveal key={label} className="kpi" delay={staggerDelay(index)} style={{ '--hue': hue }}>
+                <span className="tint-icon" aria-hidden="true"><Icon size={18} strokeWidth={1.9} /></span>
+                <dt>{label}</dt>
+                <dd><AnimatedNumber value={value} format={format} countUp /></dd>
+              </Reveal>
+            ))}
+          </dl>
+
+          <section className="attention" aria-labelledby="attention-heading">
+            <h2 id="attention-heading">Needs attention</h2>
+            <div className="attention-grid">
+              <AttentionCard to="/admin/orders?status=Pending" icon={ClipboardCheck} count={s.pendingOrders} label="Orders to confirm" />
+              <AttentionCard to="/admin/inventory?lowStock=true" icon={PackageX} count={s.lowStockCount} label="Low on stock" />
+            </div>
+          </section>
+        </>
       )}
 
       <RevenueChart />
@@ -246,8 +279,8 @@ export default function Dashboard() {
                   {top.data?.map((row) => (
                     <tr key={row.productId}>
                       <td><Link to={`/products/${row.slug}`} className="line-name">{row.name}</Link></td>
-                      <td className="num mono">{row.units}</td>
-                      <td className="num mono">{formatINR(row.revenue)}</td>
+                      <td className="num">{row.units}</td>
+                      <td className="num">{formatINR(row.revenue)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -270,10 +303,10 @@ export default function Dashboard() {
                 <tr key={row._id}>
                   <td>{row.name}</td>
                   <td className="mono">{row.sku}</td>
-                  <td className="num mono">
+                  <td className="num">
                     <span className={row.stock === 0 ? 'stock-out' : 'stock-low'}>{row.stock}</span>
                   </td>
-                  <td className="num mono">{row.lowStockThreshold}</td>
+                  <td className="num">{row.lowStockThreshold}</td>
                 </tr>
               ))}
             </tbody>

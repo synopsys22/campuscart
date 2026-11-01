@@ -1,22 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-introduction-to-algorithms-clrs" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#b45309"/>
-      <stop offset="1" stop-color="#451a03"/>
+      <stop offset="0" stop-color="#bd6518"/>
+      <stop offset="1" stop-color="#371b07"/>
     </linearGradient>
-    <pattern id="dots-introduction-to-algorithms-clrs" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-introduction-to-algorithms-clrs" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="#ffc56e" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffc56e" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-introduction-to-algorithms-clrs" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-introduction-to-algorithms-clrs)"/>
-  <rect width="400" height="400" fill="url(#dots-introduction-to-algorithms-clrs)"/>
-  <g transform="translate(0 0)">
+  <rect width="400" height="400" fill="url(#light-introduction-to-algorithms-clrs)"/>
+  <rect width="400" height="400" fill="url(#glow-introduction-to-algorithms-clrs)"/>
+  <g transform="translate(200 200) scale(0.74) translate(-207 -193)">
     <rect x="115" y="62" width="200" height="272" rx="8" fill="#000000" opacity="0.28"/>
     <rect x="105" y="52" width="200" height="272" rx="8" fill="#000000" opacity="0.25" stroke="#ffffff" stroke-opacity="0.45" stroke-width="2"/>
     <rect x="105" y="52" width="16" height="272" fill="#ffffff" opacity="0.28"/>
     <path d="M145 95h120" stroke="#ffffff" stroke-width="3" opacity="0.7"/>
+    <g transform="translate(-5 0)"><text x="215" y="147" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="21" font-weight="700" fill="#ffffff">Introduction to</text><text x="215" y="183" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="26" font-weight="700" fill="#ffffff">Algorithms</text></g>
+    <text x="210" y="285" text-anchor="middle" font-family="'IBM Plex Mono',Consolas,monospace" font-size="12" fill="#ffffff" opacity="0.88">Cormen et al.</text>
   </g>
-  <g transform="translate(-5 0)"><text x="215" y="147" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="21" font-weight="700" fill="#ffffff">Introduction to</text><text x="215" y="183" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="26" font-weight="700" fill="#ffffff">Algorithms</text></g>
-  <text x="210" y="285" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="12" fill="#ffffff" opacity="0.88">Cormen et al.</text>
-  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">MIT Press</text>
 </svg>

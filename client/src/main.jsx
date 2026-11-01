@@ -2,6 +2,7 @@ import '@fontsource-variable/ibm-plex-sans';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MotionConfig } from 'motion/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Toaster } from 'react-hot-toast';
@@ -30,7 +31,10 @@ createRoot(document.getElementById('root')).render(
           <BrowserRouter useTransitions={false}>
             <AuthProvider>
               <CompareProvider>
-                <App />
+                {/* Honours the visitor's reduced-motion setting everywhere, including layout animations. */}
+                <MotionConfig reducedMotion="user">
+                  <App />
+                </MotionConfig>
                 <Toaster
                   position="bottom-right"
                   toastOptions={{

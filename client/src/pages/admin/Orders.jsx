@@ -87,7 +87,7 @@ export function AdminOrders() {
                   </td>
                   <td>{formatDate(order.createdAt)}</td>
                   <td><StatusBadge status={order.status} /></td>
-                  <td className="num mono">{formatINR(order.total)}</td>
+                  <td className="num">{formatINR(order.total)}</td>
                 </tr>
               ))}
             </tbody>

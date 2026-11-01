@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-tvs-gold-bharat-mechanical-keyboard" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#6d28d9"/>
-      <stop offset="1" stop-color="#2e1065"/>
+      <stop offset="0" stop-color="#8537cc"/>
+      <stop offset="1" stop-color="#28104d"/>
     </linearGradient>
-    <pattern id="dots-tvs-gold-bharat-mechanical-keyboard" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-tvs-gold-bharat-mechanical-keyboard" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="#d596ff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#d596ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-tvs-gold-bharat-mechanical-keyboard" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-tvs-gold-bharat-mechanical-keyboard)"/>
-  <rect width="400" height="400" fill="url(#dots-tvs-gold-bharat-mechanical-keyboard)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><rect x="90" y="150" width="220" height="110" rx="12"/><path d="M112 175h12M140 175h12M168 175h12M196 175h12M224 175h12M252 175h12M280 175h8M112 203h12M140 203h12M168 203h12M196 203h12M224 203h12M252 203h12M280 203h8M135 235h130"/></g>
-  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">TVS</text>
+  <rect width="400" height="400" fill="url(#light-tvs-gold-bharat-mechanical-keyboard)"/>
+  <rect width="400" height="400" fill="url(#glow-tvs-gold-bharat-mechanical-keyboard)"/>
+  <g transform="translate(200 200) scale(0.72) translate(-200 -200)" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><rect x="90" y="150" width="220" height="110" rx="12"/><path d="M112 175h12M140 175h12M168 175h12M196 175h12M224 175h12M252 175h12M280 175h8M112 203h12M140 203h12M168 203h12M196 203h12M224 203h12M252 203h12M280 203h8M135 235h130"/></g>
 </svg>

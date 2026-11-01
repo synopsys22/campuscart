@@ -116,7 +116,7 @@ export default function Compare() {
               <tr key={row.id} className={differs(row) ? 'compare-differs' : ''}>
                 <th scope="row">{row.key}</th>
                 {products.map((product) => (
-                  <td key={product._id} className="mono">
+                  <td key={product._id}>
                     {specValue(product, row) ?? <span className="muted">Not listed</span>}
                   </td>
                 ))}

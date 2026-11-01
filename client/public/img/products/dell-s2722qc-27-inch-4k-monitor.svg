@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-dell-s2722qc-27-inch-4k-monitor" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#6d28d9"/>
-      <stop offset="1" stop-color="#2e1065"/>
+      <stop offset="0" stop-color="#8537cc"/>
+      <stop offset="1" stop-color="#28104d"/>
     </linearGradient>
-    <pattern id="dots-dell-s2722qc-27-inch-4k-monitor" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-dell-s2722qc-27-inch-4k-monitor" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="#d596ff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#d596ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-dell-s2722qc-27-inch-4k-monitor" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-dell-s2722qc-27-inch-4k-monitor)"/>
-  <rect width="400" height="400" fill="url(#dots-dell-s2722qc-27-inch-4k-monitor)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><rect x="95" y="110" width="210" height="140" rx="10"/><path d="M200 250v35M155 290h90"/><path d="M125 145l24 20-24 20M165 190h40"/></g>
-  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">Dell</text>
+  <rect width="400" height="400" fill="url(#light-dell-s2722qc-27-inch-4k-monitor)"/>
+  <rect width="400" height="400" fill="url(#glow-dell-s2722qc-27-inch-4k-monitor)"/>
+  <g transform="translate(200 200) scale(0.72) translate(-200 -200)" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><rect x="95" y="110" width="210" height="140" rx="10"/><path d="M200 250v35M155 290h90"/><path d="M125 145l24 20-24 20M165 190h40"/></g>
 </svg>

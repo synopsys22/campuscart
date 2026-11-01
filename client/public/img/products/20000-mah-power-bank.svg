@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-20000-mah-power-bank" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#c2410c"/>
-      <stop offset="1" stop-color="#431407"/>
+      <stop offset="0" stop-color="#c97e12"/>
+      <stop offset="1" stop-color="#382105"/>
     </linearGradient>
-    <pattern id="dots-20000-mah-power-bank" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-20000-mah-power-bank" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="#ffd47f" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffd47f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-20000-mah-power-bank" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-20000-mah-power-bank)"/>
-  <rect width="400" height="400" fill="url(#dots-20000-mah-power-bank)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><rect x="130" y="105" width="140" height="195" rx="16"/><path d="M215 145l-34 55h38l-34 55"/><path d="M155 280h6M172 280h6M189 280h6"/></g>
-  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">Mi</text>
+  <rect width="400" height="400" fill="url(#light-20000-mah-power-bank)"/>
+  <rect width="400" height="400" fill="url(#glow-20000-mah-power-bank)"/>
+  <g transform="translate(200 200) scale(0.72) translate(-200 -200)" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><rect x="130" y="105" width="140" height="195" rx="16"/><path d="M215 145l-34 55h38l-34 55"/><path d="M155 280h6M172 280h6M189 280h6"/></g>
 </svg>

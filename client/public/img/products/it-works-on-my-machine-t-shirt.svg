@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-it-works-on-my-machine-t-shirt" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#a21caf"/>
-      <stop offset="1" stop-color="#4a044e"/>
+      <stop offset="0" stop-color="#c33858"/>
+      <stop offset="1" stop-color="#3d0e1d"/>
     </linearGradient>
-    <pattern id="dots-it-works-on-my-machine-t-shirt" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-it-works-on-my-machine-t-shirt" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="#ffa0ae" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffa0ae" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-it-works-on-my-machine-t-shirt" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-it-works-on-my-machine-t-shirt)"/>
-  <rect width="400" height="400" fill="url(#dots-it-works-on-my-machine-t-shirt)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M150 115l-60 40 20 45 35-16v120h110V184l35 16 20-45-60-40"/><path d="M150 115a55 28 0 0 0 100 0"/><path d="M175 200h50"/></g>
-  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">CampusCart</text>
+  <rect width="400" height="400" fill="url(#light-it-works-on-my-machine-t-shirt)"/>
+  <rect width="400" height="400" fill="url(#glow-it-works-on-my-machine-t-shirt)"/>
+  <g transform="translate(200 200) scale(0.72) translate(-200 -200)" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M150 115l-60 40 20 45 35-16v120h110V184l35 16 20-45-60-40"/><path d="M150 115a55 28 0 0 0 100 0"/><path d="M175 200h50"/></g>
 </svg>

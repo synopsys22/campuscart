@@ -1,9 +1,10 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link, useParams } from 'react-router-dom';
 import { orderApi } from '../../api/index.js';
+import { SuccessMark, useSmoothList } from '../../components/motion.jsx';
 import { OrderTimeline } from '../../components/orders.jsx';
 import { ProductImage } from '../../components/product.jsx';
 import {
@@ -36,7 +37,7 @@ export function OrderSuccess() {
   if (isError) return <div className="container page"><ErrorState error={error} onRetry={refetch} /></div>;
   return (
     <div className="container page success">
-      <CheckCircle2 size={48} strokeWidth={1.5} className="success-icon" aria-hidden="true" />
+      <SuccessMark />
       <h1>Your order is placed</h1>
       <p className="mono">{order.orderNumber}</p>
       <p className="muted">
@@ -53,6 +54,7 @@ export function OrderSuccess() {
 
 export function MyOrders() {
   usePageTitle('My orders');
+  const listRef = useSmoothList();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('All');
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -91,7 +93,7 @@ export function MyOrders() {
           {status === 'All' ? 'Your orders and their tracking will appear here.' : 'Choose a different status to see other orders.'}
         </EmptyState>
       )}
-      <ul className="order-list">
+      <ul className="order-list" ref={listRef}>
         {data?.items.map((order) => (
           <li key={order._id}>
             <Link to={`/account/orders/${order._id}`} className="order-row">
@@ -105,7 +107,7 @@ export function MyOrders() {
                 </span>
               </div>
               <StatusBadge status={order.status} />
-              <span className="mono">{formatINR(order.total)}</span>
+              <span>{formatINR(order.total)}</span>
             </Link>
           </li>
         ))}
@@ -164,12 +166,12 @@ export function OrderItems({ order, showReviewLinks = false }) {
           <ProductImage src={item.image} alt="" className="line-image" />
           <div className="line-info">
             {item.slug ? <Link to={`/products/${item.slug}`} className="line-name">{item.name}</Link> : <span className="line-name">{item.name}</span>}
-            <span className="small muted mono">{formatINR(item.price)} × {item.qty}</span>
+            <span className="small muted">{formatINR(item.price)} × {item.qty}</span>
             {showReviewLinks && order.status === 'Delivered' && item.slug && (
               <Link to={`/products/${item.slug}#reviews`} className="text-link small">Review this product</Link>
             )}
           </div>
-          <span className="mono">{formatINR(item.lineTotal)}</span>
+          <span>{formatINR(item.lineTotal)}</span>
         </li>
       ))}
     </ul>
@@ -179,15 +181,15 @@ export function OrderItems({ order, showReviewLinks = false }) {
 export function OrderTotals({ order }) {
   return (
     <dl className="summary-rows">
-      <div><dt>Subtotal</dt><dd className="mono">{formatINR(order.subtotal)}</dd></div>
+      <div><dt>Subtotal</dt><dd>{formatINR(order.subtotal)}</dd></div>
       {order.discount > 0 && (
         <div>
           <dt>Coupon <span className="mono">{order.couponCode}</span></dt>
-          <dd className="mono summary-good">-{formatINR(order.discount)}</dd>
+          <dd className="summary-good">-{formatINR(order.discount)}</dd>
         </div>
       )}
-      <div><dt>Shipping</dt><dd className="mono">{order.shippingFee === 0 ? 'Free' : formatINR(order.shippingFee)}</dd></div>
-      <div className="summary-total"><dt>Total</dt><dd className="mono">{formatINR(order.total)}</dd></div>
+      <div><dt>Shipping</dt><dd>{order.shippingFee === 0 ? 'Free' : formatINR(order.shippingFee)}</dd></div>
+      <div className="summary-total"><dt>Total</dt><dd>{formatINR(order.total)}</dd></div>
     </dl>
   );
 }

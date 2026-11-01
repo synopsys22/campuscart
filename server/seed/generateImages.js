@@ -8,19 +8,20 @@ import { kits, products } from './data/catalog.js';
 
 const OUTPUT = path.join(PROJECT_ROOT, 'client', 'public', 'img');
 
-// Each category has its own colour pair, so products are easy to tell apart in a grid.
+// Each category has its own colour: a deep base, a richer mid tone and a highlight of light.
+// These match the category tiles on the home page.
 const PALETTES = {
-  'dev-hardware': ['#0f766e', '#042f2e'],
-  laptops: ['#3730a3', '#1e1b4b'],
-  peripherals: ['#6d28d9', '#2e1065'],
-  'laptop-accessories': ['#0369a1', '#082f49'],
-  'storage-cables': ['#0e7490', '#083344'],
-  'cs-textbooks': ['#b45309', '#451a03'],
-  'software-licenses': ['#15803d', '#052e16'],
-  stationery: ['#be123c', '#4c0519'],
-  backpacks: ['#4d7c0f', '#1a2e05'],
-  'college-merch': ['#a21caf', '#4a044e'],
-  'daily-essentials': ['#c2410c', '#431407'],
+  'dev-hardware': ['#3a4fd6', '#141a4d', '#7f96ff'],
+  laptops: ['#5a3fd4', '#1b154e', '#a78bff'],
+  peripherals: ['#8537cc', '#28104d', '#d596ff'],
+  'laptop-accessories': ['#1f6ccc', '#0c234e', '#74c4ff'],
+  'storage-cables': ['#0f7ab3', '#082942', '#66d8f5'],
+  'cs-textbooks': ['#bd6518', '#371b07', '#ffc56e'],
+  'software-licenses': ['#ab3489', '#380e31', '#ff94d9'],
+  stationery: ['#d1502f', '#40140a', '#ffb59a'],
+  backpacks: ['#86653a', '#29200f', '#e6c690'],
+  'college-merch': ['#c33858', '#3d0e1d', '#ffa0ae'],
+  'daily-essentials': ['#c97e12', '#382105', '#ffd47f'],
 };
 
 // Line drawings on a 400 by 400 canvas, roughly centred.
@@ -63,30 +64,34 @@ const ART = {
 const escapeXml = (text) =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-function frame(light, dark, id, inner) {
+function frame(rich, deep, highlight, id, inner) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-${id}" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="${light}"/>
-      <stop offset="1" stop-color="${dark}"/>
+      <stop offset="0" stop-color="${rich}"/>
+      <stop offset="1" stop-color="${deep}"/>
     </linearGradient>
-    <pattern id="dots-${id}" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-${id}" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="${highlight}" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="${highlight}" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-${id}" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-${id})"/>
-  <rect width="400" height="400" fill="url(#dots-${id})"/>
+  <rect width="400" height="400" fill="url(#light-${id})"/>
+  <rect width="400" height="400" fill="url(#glow-${id})"/>
 ${inner}
 </svg>
 `;
 }
 
+// The drawing is scaled down around the centre, with a finer line, so it sits in its tile
+// like a product rather than filling it like an oversized icon.
 function drawing(art) {
-  return `  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">${ART[art]}</g>`;
-}
-
-function brandLabel(brand) {
-  return `  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">${escapeXml(brand)}</text>`;
+  return `  <g transform="translate(200 200) scale(0.72) translate(-200 -200)" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">${ART[art]}</g>`;
 }
 
 /** Textbooks show their title on the cover instead of a generic drawing. */
@@ -99,14 +104,14 @@ function bookCover(product) {
         `<text x="215" y="${start + index * 36}" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="${line.length > 14 ? 21 : 26}" font-weight="700" fill="#ffffff">${escapeXml(line)}</text>`,
     )
     .join('');
-  return `  <g transform="translate(0 0)">
+  return `  <g transform="translate(200 200) scale(0.74) translate(-207 -193)">
     <rect x="115" y="62" width="200" height="272" rx="8" fill="#000000" opacity="0.28"/>
     <rect x="105" y="52" width="200" height="272" rx="8" fill="#000000" opacity="0.25" stroke="#ffffff" stroke-opacity="0.45" stroke-width="2"/>
     <rect x="105" y="52" width="16" height="272" fill="#ffffff" opacity="0.28"/>
     <path d="M145 95h120" stroke="#ffffff" stroke-width="3" opacity="0.7"/>
-  </g>
-  <g transform="translate(-5 0)">${title}</g>
-  <text x="210" y="285" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="12" fill="#ffffff" opacity="0.88">${escapeXml(product.author ?? '')}</text>`;
+    <g transform="translate(-5 0)">${title}</g>
+    <text x="210" y="285" text-anchor="middle" font-family="'IBM Plex Mono',Consolas,monospace" font-size="12" fill="#ffffff" opacity="0.88">${escapeXml(product.author ?? '')}</text>
+  </g>`;
 }
 
 function writeSvg(folder, slug, svg) {
@@ -116,15 +121,14 @@ function writeSvg(folder, slug, svg) {
 
 for (const product of products) {
   const slug = slugify(product.name);
-  const [light, dark] = PALETTES[product.category];
+  const [rich, deep, highlight] = PALETTES[product.category];
   const inner = product.art === 'book' ? bookCover(product) : drawing(product.art);
-  writeSvg('products', slug, frame(light, dark, slug, `${inner}\n${brandLabel(product.brand)}`));
+  writeSvg('products', slug, frame(rich, deep, highlight, slug, inner));
 }
 
 for (const kit of kits) {
   const slug = slugify(kit.name);
-  const inner = `${drawing(kit.art)}\n  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.88">PROJECT KIT</text>`;
-  writeSvg('kits', slug, frame('#4338ca', '#0f172a', slug, inner));
+  writeSvg('kits', slug, frame('#5b34e0', '#1a1250', '#c084fc', slug, drawing(kit.art)));
 }
 
 console.log(`Drew ${products.length} products and ${kits.length} kits in ${OUTPUT}`);

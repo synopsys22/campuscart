@@ -256,8 +256,8 @@ export function AdminProducts() {
                     <div className="small muted mono">{product.sku}</div>
                   </td>
                   <td>{product.category?.name}</td>
-                  <td className="num mono">{formatINR(product.price)}</td>
-                  <td className="num mono">{product.stock}</td>
+                  <td className="num">{formatINR(product.price)}</td>
+                  <td className="num">{product.stock}</td>
                   <td>
                     <span className={`badge ${product.isActive ? 'badge-success' : ''}`}>{product.isActive ? 'Visible' : 'Hidden'}</span>
                   </td>
@@ -315,7 +315,7 @@ function StockRow({ product }) {
         <div className="small muted mono">{product.sku}</div>
       </td>
       <td>{product.category?.name}</td>
-      <td className="num mono">{product.lowStockThreshold}</td>
+      <td className="num">{product.lowStockThreshold}</td>
       <td>{low ? <span className={`badge ${product.stock === 0 ? 'badge-danger' : 'badge-warning'}`}>{product.stock === 0 ? 'Sold out' : 'Low'}</span> : <span className="badge badge-success">OK</span>}</td>
       <td>
         <form
@@ -328,7 +328,7 @@ function StockRow({ product }) {
           <label className="visually-hidden" htmlFor={`stock-${product._id}`}>Stock for {product.name}</label>
           <input
             id={`stock-${product._id}`}
-            className="input mono stock-input"
+            className="input stock-input"
             inputMode="numeric"
             value={value}
             onChange={(event) => setValue(event.target.value.replace(/\D/g, ''))}
@@ -485,7 +485,7 @@ export function AdminCategories() {
                 <tr key={category._id}>
                   <td>{category.name}</td>
                   <td className="muted">{category.description}</td>
-                  <td className="num mono">{count(category._id)}</td>
+                  <td className="num">{count(category._id)}</td>
                   <td><span className={`badge ${category.isActive ? 'badge-success' : ''}`}>{category.isActive ? 'Visible' : 'Hidden'}</span></td>
                   <td>
                     <div className="table-actions">

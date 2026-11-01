@@ -3,31 +3,33 @@ import { ShoppingCart, Tag, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cartApi, couponApi } from '../../api/index.js';
+import { AnimatedNumber, useSmoothList } from '../../components/motion.jsx';
 import { ProductImage } from '../../components/product.jsx';
 import { EmptyState, ErrorState, PathCrumbs, SkeletonRows, Stepper } from '../../components/ui.jsx';
 import { useCart, useCartMutation, usePageTitle } from '../../hooks/shop.js';
 import { couponSummary, formatINR } from '../../utils/format.js';
 
 export function OrderSummaryRows({ pricing }) {
+  const rowsRef = useSmoothList();
   return (
-    <dl className="summary-rows">
+    <dl className="summary-rows" ref={rowsRef}>
       <div>
         <dt>Subtotal ({pricing.itemCount} item{pricing.itemCount === 1 ? '' : 's'})</dt>
-        <dd className="mono">{formatINR(pricing.subtotal)}</dd>
+        <dd>{formatINR(pricing.subtotal)}</dd>
       </div>
       {pricing.discount > 0 && (
         <div>
           <dt>Coupon discount</dt>
-          <dd className="mono summary-good">-{formatINR(pricing.discount)}</dd>
+          <dd className="summary-good">-{formatINR(pricing.discount)}</dd>
         </div>
       )}
       <div>
         <dt>Shipping</dt>
-        <dd className="mono">{pricing.shippingFee === 0 ? 'Free' : formatINR(pricing.shippingFee)}</dd>
+        <dd>{pricing.shippingFee === 0 ? 'Free' : formatINR(pricing.shippingFee)}</dd>
       </div>
       <div className="summary-total">
         <dt>Total</dt>
-        <dd className="mono" data-testid="order-total">{formatINR(pricing.total)}</dd>
+        <dd data-testid="order-total"><AnimatedNumber value={pricing.total} format={formatINR} /></dd>
       </div>
     </dl>
   );
@@ -107,11 +109,11 @@ function CartLine({ item }) {
       <ProductImage src={product.images?.[0]} alt="" className="line-image" />
       <div className="line-info">
         <Link to={`/products/${product.slug}`} className="line-name">{product.name}</Link>
-        <span className="small muted mono">{formatINR(product.price)} each</span>
+        <span className="small muted">{formatINR(product.price)} each</span>
         {item.issue && <span className="small stock-low" role="alert">{item.issue}</span>}
       </div>
       <Stepper value={qty} max={Math.max(product.stock, qty)} disabled={setQty.isPending} onChange={(value) => setQty.mutate(value)} label={`Quantity of ${product.name}`} />
-      <span className="mono line-total">{formatINR(item.lineTotal)}</span>
+      <span className="line-total">{formatINR(item.lineTotal)}</span>
       <button type="button" className="icon-btn" aria-label={`Remove ${product.name}`} disabled={remove.isPending} onClick={() => remove.mutate()}>
         <Trash2 size={16} aria-hidden="true" />
       </button>
@@ -124,6 +126,7 @@ export default function Cart() {
   const navigate = useNavigate();
   const { data: cart, isLoading, isError, error, refetch } = useCart();
   const clear = useCartMutation(cartApi.clear, { success: 'Cart cleared' });
+  const linesRef = useSmoothList();
 
   if (isLoading) return <div className="container page"><SkeletonRows /></div>;
   if (isError) return <div className="container page"><ErrorState error={error} onRetry={refetch} /></div>;
@@ -156,7 +159,7 @@ export default function Cart() {
         </button>
       </div>
       <div className="two-col">
-        <ul className="line-list">
+        <ul className="line-list" ref={linesRef}>
           {cart.items.map((item) => <CartLine key={item.product._id} item={item} />)}
         </ul>
         <aside className="summary">

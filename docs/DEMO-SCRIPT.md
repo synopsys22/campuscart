@@ -42,7 +42,7 @@ No internet is needed once the project has been installed and run once on this l
 
 ### 5. Running the store as an admin (2.5 minutes)
 
-1. Log out, then use **Log in as Admin**. The dashboard opens.
+1. Log out, then use **Log in as Admin**. The dashboard opens. Point out the orange **Admin mode** strip and colour: it is the same application, and the role decides what you see and can do.
 2. Explain the revenue chart, sales by category, order status and low-stock alerts. Switch the range from 30 to 90 days.
 3. Open **Orders**, find the order you just placed, and click **Mark as Confirmed**. Say that the server refuses skipped steps.
 4. Open **Inventory**. Change a product's stock and save.

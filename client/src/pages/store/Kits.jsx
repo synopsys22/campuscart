@@ -63,8 +63,8 @@ export function KitDetail() {
                   <Link to={`/products/${product.slug}`} className="line-name">{product.name}</Link>
                   <StockNote product={product} />
                 </div>
-                <span className="mono small muted">Qty {qty}</span>
-                <span className="mono">{formatINR(product.price * qty)}</span>
+                <span className="small muted">Qty {qty}</span>
+                <span>{formatINR(product.price * qty)}</span>
               </li>
             ))}
           </ul>
@@ -72,9 +72,9 @@ export function KitDetail() {
         <aside className="summary">
           <h2>Kit total</h2>
           <dl className="summary-rows">
-            <div><dt>Items</dt><dd className="mono">{kit.itemCount}</dd></div>
-            {savings > 0 && <div><dt>You save on MRP</dt><dd className="mono summary-good">{formatINR(savings)}</dd></div>}
-            <div className="summary-total"><dt>Total</dt><dd className="mono">{formatINR(kit.totalPrice)}</dd></div>
+            <div><dt>Items</dt><dd>{kit.itemCount}</dd></div>
+            {savings > 0 && <div><dt>You save on MRP</dt><dd className="summary-good">{formatINR(savings)}</dd></div>}
+            <div className="summary-total"><dt>Total</dt><dd>{formatINR(kit.totalPrice)}</dd></div>
           </dl>
           <button type="button" className="btn btn-primary btn-large btn-full" disabled={addKit.isPending} onClick={() => addKit.add(kit)}>
             <PackagePlus size={18} aria-hidden="true" /> Add all to cart

@@ -59,10 +59,21 @@ export function useCartMutation(mutationFn, { success, onSuccess, quietErrors = 
 
 export function useAddToCart() {
   const requireLogin = useRequireLogin();
+  const [addedId, setAddedId] = useState(null);
   const mutation = useCartMutation(({ product, qty }) => cartApi.add(product._id, qty), {
     success: ({ product }) => `Added ${product.name} to your cart`,
+    onSuccess: (_cart, { product }) => setAddedId(product._id),
   });
+
+  // The button shows a tick for a moment after adding.
+  useEffect(() => {
+    if (!addedId) return undefined;
+    const timer = setTimeout(() => setAddedId(null), 1400);
+    return () => clearTimeout(timer);
+  }, [addedId]);
+
   return {
+    addedId,
     add: (product, qty = 1) => {
       if (requireLogin('Log in to add items to your cart.')) mutation.mutate({ product, qty });
     },

@@ -151,9 +151,9 @@ export function AdminCoupons() {
                       <div className="small muted">{coupon.description}</div>
                     </td>
                     <td>{couponSummary(coupon)}</td>
-                    <td className="num mono">{formatINR(coupon.minOrder)}</td>
+                    <td className="num">{formatINR(coupon.minOrder)}</td>
                     <td>{coupon.expiresAt ? formatDate(coupon.expiresAt) : <span className="muted">Never</span>}</td>
-                    <td className="num mono">{coupon.usedCount}{coupon.usageLimit ? ` of ${coupon.usageLimit}` : ''}</td>
+                    <td className="num">{coupon.usedCount}{coupon.usageLimit ? ` of ${coupon.usageLimit}` : ''}</td>
                     <td><span className={`badge ${badge}`}>{label}</span></td>
                     <td>
                       <div className="table-actions">
@@ -244,7 +244,7 @@ function KitForm({ kit, onClose }) {
               <select className="input" aria-label={`Product ${index + 1}`} value={item.product} onChange={(e) => setItem(index, { product: e.target.value })}>
                 {options.map((product) => <option key={product._id} value={product._id}>{product.name}</option>)}
               </select>
-              <input className="input mono" aria-label={`Quantity of product ${index + 1}`} inputMode="numeric" value={item.qty} onChange={(e) => setItem(index, { qty: e.target.value.replace(/\D/g, '') })} />
+              <input className="input" aria-label={`Quantity of product ${index + 1}`} inputMode="numeric" value={item.qty} onChange={(e) => setItem(index, { qty: e.target.value.replace(/\D/g, '') })} />
               <button type="button" className="icon-btn" aria-label={`Remove product ${index + 1}`} onClick={() => setForm({ ...form, items: form.items.filter((_, i) => i !== index) })}>
                 <Trash2 size={15} aria-hidden="true" />
               </button>
@@ -315,8 +315,8 @@ export function AdminKits() {
                     {kit.name}
                     <div className="small muted">{kit.audience}</div>
                   </td>
-                  <td className="num mono">{kit.itemCount}</td>
-                  <td className="num mono">{formatINR(kit.totalPrice)}</td>
+                  <td className="num">{kit.itemCount}</td>
+                  <td className="num">{formatINR(kit.totalPrice)}</td>
                   <td><span className={`badge ${kit.inStock ? 'badge-success' : 'badge-warning'}`}>{kit.inStock ? 'All in stock' : 'Short on stock'}</span></td>
                   <td><span className={`badge ${kit.isActive ? 'badge-success' : ''}`}>{kit.isActive ? 'Visible' : 'Hidden'}</span></td>
                   <td>

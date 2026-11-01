@@ -14,8 +14,20 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Keeps the footer at the bottom of the window on short pages. */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1;
 }
 
 h1,
@@ -43,7 +55,12 @@ h3,
 h4 {
   font-weight: 600;
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 h1 {
@@ -90,7 +107,7 @@ button:disabled {
 }
 
 ::selection {
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--on-accent);
 }
 
@@ -124,9 +141,18 @@ button:disabled {
   top: -100px;
   z-index: 100;
   padding: var(--space-2) var(--space-4);
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--on-accent);
   border-radius: var(--radius-md);
+}
+
+main:focus {
+  outline: none;
+}
+
+/* Scrollbars in the same colours as everything else. */
+html {
+  scrollbar-color: var(--line-strong) transparent;
 }
 
 .skip-link:focus {

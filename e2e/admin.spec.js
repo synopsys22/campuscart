@@ -22,7 +22,7 @@ test('the dashboard shows real figures and charts', async ({ page }) => {
   await expect(page.locator('.recharts-area-curve')).toBeVisible();
   await expect(page.locator('.recharts-bar-rectangle').first()).toBeVisible();
   await page.getByRole('button', { name: '7 days' }).click();
-  await expect(page.getByText(/in the last 7 days/)).toBeVisible();
+  await expect(page.getByText(/^In the last 7 days/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Low-stock alerts' })).toBeVisible();
   await expect(page.locator('.status-bars li')).toHaveCount(5);
 });

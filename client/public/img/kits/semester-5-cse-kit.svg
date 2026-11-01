@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-semester-5-cse-kit" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4338ca"/>
-      <stop offset="1" stop-color="#0f172a"/>
+      <stop offset="0" stop-color="#5b34e0"/>
+      <stop offset="1" stop-color="#1a1250"/>
     </linearGradient>
-    <pattern id="dots-semester-5-cse-kit" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-semester-5-cse-kit" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="#c084fc" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#c084fc" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-semester-5-cse-kit" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-semester-5-cse-kit)"/>
-  <rect width="400" height="400" fill="url(#dots-semester-5-cse-kit)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M110 110h150a30 30 0 0 1 30 30v150H140a30 30 0 0 1-30-30z"/><path d="M110 260a30 30 0 0 1 30-30h150"/></g>
-  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.88">PROJECT KIT</text>
+  <rect width="400" height="400" fill="url(#light-semester-5-cse-kit)"/>
+  <rect width="400" height="400" fill="url(#glow-semester-5-cse-kit)"/>
+  <g transform="translate(200 200) scale(0.72) translate(-200 -200)" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><path d="M110 110h150a30 30 0 0 1 30 30v150H140a30 30 0 0 1-30-30z"/><path d="M110 260a30 30 0 0 1 30-30h150"/></g>
 </svg>

@@ -1,7 +1,9 @@
-import { GitCompareArrows, Heart, PackageSearch, ShoppingCart } from 'lucide-react';
+import { Check, GitCompareArrows, Heart, PackageSearch, ShoppingCart } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useCompare } from '../context/CompareContext.jsx';
 import { useAddToCart, useWishlist } from '../hooks/shop.js';
+import { EASE_OUT, SPRING, staggerDelay } from './motion.jsx';
 import { EmptyState, Price, Stars } from './ui.jsx';
 
 export function ProductImage({ src, alt, className = '' }) {
@@ -18,7 +20,27 @@ export function StockNote({ product }) {
   return <span className="stock stock-in">In stock</span>;
 }
 
+/** The cart icon, which briefly becomes a tick once something has been added. */
+export function CartIcon({ added, size = 14 }) {
+  const reduce = useReducedMotion();
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.span
+        key={added ? 'added' : 'cart'}
+        className={`icon-swap ${added ? 'added-mark' : ''}`}
+        initial={reduce ? false : { scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.5, opacity: 0, transition: { duration: 0.08 } }}
+        transition={SPRING}
+      >
+        {added ? <Check size={size} aria-hidden="true" /> : <ShoppingCart size={size} aria-hidden="true" />}
+      </motion.span>
+    </AnimatePresence>
+  );
+}
+
 export function WishlistButton({ product, withLabel = false }) {
+  const reduce = useReducedMotion();
   const wishlist = useWishlist();
   const saved = wishlist.has(product._id);
   const label = saved ? 'Remove from wishlist' : 'Save to wishlist';
@@ -30,7 +52,15 @@ export function WishlistButton({ product, withLabel = false }) {
       aria-pressed={saved}
       onClick={() => wishlist.toggle(product)}
     >
-      <Heart size={16} className={saved ? 'heart-on' : ''} aria-hidden="true" />
+      <motion.span
+        key={saved ? 'saved' : 'not-saved'}
+        className="icon-swap"
+        initial={reduce || !saved ? false : { scale: 0.4 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 14 }}
+      >
+        <Heart size={16} className={saved ? 'heart-on' : ''} aria-hidden="true" />
+      </motion.span>
       {withLabel && label}
     </button>
   );
@@ -73,18 +103,22 @@ export function ProductCell({ product }) {
         <h3 className="bin-name">
           <Link to={`/products/${product.slug}`}>{product.name}</Link>
         </h3>
-        {product.ratingCount > 0 && <Stars value={product.ratingAvg} count={product.ratingCount} />}
+        {product.ratingCount > 0 ? (
+          <Stars value={product.ratingAvg} count={product.ratingCount} />
+        ) : (
+          <span className="stars-none">No reviews yet</span>
+        )}
         <Price price={product.price} mrp={product.mrp} />
         <div className="bin-foot">
           <StockNote product={product} />
           <button
             type="button"
-            className="btn btn-small"
+            className="btn btn-small btn-soft"
             disabled={soldOut || cart.pendingId === product._id}
             aria-label={`Add ${product.name} to cart`}
             onClick={() => cart.add(product)}
           >
-            <ShoppingCart size={14} aria-hidden="true" /> Add
+            <CartIcon added={cart.addedId === product._id} /> Add
           </button>
         </div>
       </div>
@@ -93,11 +127,31 @@ export function ProductCell({ product }) {
 }
 
 export function ProductBin({ products, list = false }) {
+  const reduce = useReducedMotion();
   return (
     <div className={`bin ${list ? 'bin-list' : ''}`}>
-      {products.map((product) => (
-        <ProductCell key={product._id} product={product} />
-      ))}
+      {/* Cards fade up in a wave, and slide to their new places when filters or sorting change. */}
+      <AnimatePresence mode="popLayout">
+        {products.map((product, index) => (
+          <motion.div
+            key={product._id}
+            className="reveal bin-slot"
+            layout="position"
+            initial={reduce ? false : { opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+            viewport={{ once: true, margin: '0px 0px -40px 0px' }}
+            transition={{
+              duration: 0.45,
+              ease: EASE_OUT,
+              delay: staggerDelay(index),
+              layout: { duration: 0.3, ease: EASE_OUT },
+            }}
+          >
+            <ProductCell product={product} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

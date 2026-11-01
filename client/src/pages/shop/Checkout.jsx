@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { orderApi, profileApi } from '../../api/index.js';
 import { AddressForm } from '../../components/AddressForm.jsx';
+import { Enter } from '../../components/motion.jsx';
 import { ProductImage } from '../../components/product.jsx';
 import { ErrorState, PathCrumbs, SkeletonRows, Spinner } from '../../components/ui.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -32,7 +33,7 @@ function Steps({ step }) {
           className={index === step ? 'step-on' : index < step ? 'step-done' : ''}
           aria-current={index === step ? 'step' : undefined}
         >
-          <span className="step-pad mono" aria-hidden="true">{index + 1}</span>
+          <span className="step-pad" aria-hidden="true">{index + 1}</span>
           {label}
         </li>
       ))}
@@ -131,7 +132,7 @@ function ReviewStep({ cart, address, method, isPlacing, onBack, onPlace }) {
               <span className="line-name">{product.name}</span>
               <span className="small muted">Qty {qty}</span>
             </div>
-            <span className="mono">{formatINR(lineTotal)}</span>
+            <span>{formatINR(lineTotal)}</span>
           </li>
         ))}
       </ul>
@@ -195,7 +196,7 @@ export default function Checkout() {
       <h1 className="page-title">Checkout</h1>
       <Steps step={step} />
       <div className="two-col">
-        <div>
+        <Enter key={step} from={{ x: 16 }}>
           {step === 0 && <AddressStep selectedId={addressId} onSelect={setAddressId} onContinue={() => setStep(1)} />}
           {step === 1 && <PaymentStep method={method} onSelect={setMethod} onBack={() => setStep(0)} onContinue={() => setStep(2)} />}
           {step === 2 && address && (
@@ -208,7 +209,7 @@ export default function Checkout() {
               onPlace={() => place.mutate()}
             />
           )}
-        </div>
+        </Enter>
         <aside className="summary">
           <h2>Order summary</h2>
           {cart.couponCode && !cart.couponError && <p className="small">Coupon <strong className="mono">{cart.couponCode}</strong> applied.</p>}

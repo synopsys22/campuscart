@@ -48,7 +48,7 @@ The login page has one-click buttons for these.
 - Three-step checkout, with Cash on Delivery and simulated UPI and card payments
 - Order tracking on a timeline, and cancellation before shipping
 - Wishlist
-- Dark and light themes
+- Dark and light themes, with subtle animation that respects reduced-motion settings
 
 **Built for CS students**
 
@@ -79,7 +79,7 @@ The login page has one-click buttons for these.
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, Vite, React Router, TanStack Query, Axios, Recharts, custom CSS |
+| Frontend | React 19, Vite, React Router, TanStack Query, Axios, Recharts, Motion, AutoAnimate, custom CSS |
 | Backend | Node.js, Express 5, Zod validation, Multer uploads |
 | Database | MongoDB, Mongoose, `mongodb-memory-server` |
 | Auth | JWT, bcrypt |

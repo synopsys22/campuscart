@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-sandisk-ultra-usb-3-0-drive-64-gb" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0e7490"/>
-      <stop offset="1" stop-color="#083344"/>
+      <stop offset="0" stop-color="#0f7ab3"/>
+      <stop offset="1" stop-color="#082942"/>
     </linearGradient>
-    <pattern id="dots-sandisk-ultra-usb-3-0-drive-64-gb" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-sandisk-ultra-usb-3-0-drive-64-gb" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="#66d8f5" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#66d8f5" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-sandisk-ultra-usb-3-0-drive-64-gb" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-sandisk-ultra-usb-3-0-drive-64-gb)"/>
-  <rect width="400" height="400" fill="url(#dots-sandisk-ultra-usb-3-0-drive-64-gb)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><rect x="155" y="170" width="90" height="125" rx="12"/><rect x="172" y="110" width="56" height="60" rx="4"/><path d="M188 130h8M204 130h8"/><path d="M180 205h40"/></g>
-  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">SanDisk</text>
+  <rect width="400" height="400" fill="url(#light-sandisk-ultra-usb-3-0-drive-64-gb)"/>
+  <rect width="400" height="400" fill="url(#glow-sandisk-ultra-usb-3-0-drive-64-gb)"/>
+  <g transform="translate(200 200) scale(0.72) translate(-200 -200)" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><rect x="155" y="170" width="90" height="125" rx="12"/><rect x="172" y="110" width="56" height="60" rx="4"/><path d="M188 130h8M204 130h8"/><path d="M180 205h40"/></g>
 </svg>

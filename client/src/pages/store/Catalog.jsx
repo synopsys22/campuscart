@@ -3,9 +3,16 @@ import { LayoutGrid, List, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { productApi } from '../../api/index.js';
+import { useSmoothList } from '../../components/motion.jsx';
 import { NoProducts, ProductBin } from '../../components/product.jsx';
 import { ErrorState, Pagination, PathCrumbs, SkeletonGrid } from '../../components/ui.jsx';
 import { usePageTitle } from '../../hooks/shop.js';
+
+function showingText({ page, limit, total }) {
+  const first = (page - 1) * limit + 1;
+  const last = Math.min(page * limit, total);
+  return `Showing ${first}–${last} of ${total} product${total === 1 ? '' : 's'}`;
+}
 
 const SORTS = [
   ['featured', 'Featured'],
@@ -17,6 +24,32 @@ const SORTS = [
 ];
 
 const csvValues = (value) => (value ? value.split(',').filter(Boolean) : []);
+
+function priceLabel(min, max) {
+  if (min && max) return `₹${min} to ₹${max}`;
+  return min ? `From ₹${min}` : `Up to ₹${max}`;
+}
+
+/** Everything currently narrowing the list, each removable on its own. */
+function AppliedFilters({ filters, onClear }) {
+  const listRef = useSmoothList();
+  if (filters.length === 0) return null;
+  return (
+    <div className="applied">
+      <ul className="chip-row" aria-label="Applied filters" ref={listRef}>
+        {filters.map((filter) => (
+          <li key={filter.key}>
+            <button type="button" className="chip chip-applied" aria-label={`Remove filter: ${filter.label}`} onClick={filter.remove}>
+              {filter.label}
+              <X size={14} aria-hidden="true" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="text-link small" onClick={onClear}>Clear all</button>
+    </div>
+  );
+}
 
 function PriceFilter({ params, update }) {
   const [min, setMin] = useState(params.get('minPrice') ?? '');
@@ -36,9 +69,9 @@ function PriceFilter({ params, update }) {
   return (
     <form className="price-filter" onSubmit={apply}>
       <label className="visually-hidden" htmlFor="min-price">Minimum price</label>
-      <input id="min-price" className="input mono" inputMode="numeric" placeholder="₹ Min" value={min} onChange={(e) => setMin(e.target.value.replace(/\D/g, ''))} />
+      <input id="min-price" className="input" inputMode="numeric" placeholder="₹ Min" value={min} onChange={(e) => setMin(e.target.value.replace(/\D/g, ''))} />
       <label className="visually-hidden" htmlFor="max-price">Maximum price</label>
-      <input id="max-price" className="input mono" inputMode="numeric" placeholder="₹ Max" value={max} onChange={(e) => setMax(e.target.value.replace(/\D/g, ''))} />
+      <input id="max-price" className="input" inputMode="numeric" placeholder="₹ Max" value={max} onChange={(e) => setMax(e.target.value.replace(/\D/g, ''))} />
       <button type="submit" className="btn btn-small">Apply</button>
     </form>
   );
@@ -58,7 +91,7 @@ function Filters({ options, params, update, toggleValue }) {
               onChange={() => toggleValue('category', category.slug)}
             />
             <span>{category.name}</span>
-            <span className="mono small muted">{category.count}</span>
+            <span className="small muted">{category.count}</span>
           </label>
         ))}
       </fieldset>
@@ -106,7 +139,7 @@ function Filters({ options, params, update, toggleValue }) {
             <button
               type="button"
               key={semester}
-              className={`chip mono ${params.get('semester') === String(semester) ? 'chip-on' : ''}`}
+              className={`chip ${params.get('semester') === String(semester) ? 'chip-on' : ''}`}
               aria-pressed={params.get('semester') === String(semester)}
               onClick={() => update({ semester: params.get('semester') === String(semester) ? '' : semester })}
             >
@@ -180,6 +213,35 @@ export default function Catalog() {
   const onlyCategory = csvValues(params.get('category')).length === 1 ? categoryName(params.get('category')) : null;
   const heading = params.get('q') ? `Results for "${params.get('q')}"` : onlyCategory || 'All products';
 
+  const applied = [
+    ...csvValues(params.get('category')).map((slug) => ({
+      key: `category-${slug}`,
+      label: categoryName(slug) ?? slug,
+      remove: () => toggleValue('category', slug),
+    })),
+    ...csvValues(params.get('brand')).map((brand) => ({
+      key: `brand-${brand}`,
+      label: brand,
+      remove: () => toggleValue('brand', brand),
+    })),
+    ...(params.get('rating')
+      ? [{ key: 'rating', label: `${params.get('rating')} stars and up`, remove: () => update({ rating: '' }) }]
+      : []),
+    ...(params.get('inStock') === 'true'
+      ? [{ key: 'stock', label: 'In stock only', remove: () => update({ inStock: '' }) }]
+      : []),
+    ...(params.get('semester')
+      ? [{ key: 'semester', label: `Semester ${params.get('semester')}`, remove: () => update({ semester: '' }) }]
+      : []),
+    ...(params.get('minPrice') || params.get('maxPrice')
+      ? [{
+          key: 'price',
+          label: priceLabel(params.get('minPrice'), params.get('maxPrice')),
+          remove: () => update({ minPrice: '', maxPrice: '' }),
+        }]
+      : []),
+  ];
+
   return (
     <div className="container page">
       <PathCrumbs
@@ -198,7 +260,7 @@ export default function Catalog() {
         <div className="row">
           <button type="button" className="btn filter-toggle" onClick={() => setDrawerOpen(true)}>
             <SlidersHorizontal size={16} aria-hidden="true" /> Filters
-            {activeFilterCount > 0 && <span className="mono">({activeFilterCount})</span>}
+            {activeFilterCount > 0 && <span>({activeFilterCount})</span>}
           </button>
           <label className="visually-hidden" htmlFor="sort">Sort by</label>
           <select
@@ -241,6 +303,7 @@ export default function Catalog() {
         </aside>
 
         <div className="catalog-main" aria-busy={isFetching}>
+          <AppliedFilters filters={applied} onClear={clearAll} />
           {isLoading && <SkeletonGrid count={9} />}
           {isError && <ErrorState error={error} onRetry={refetch} />}
           {data?.items.length === 0 && (
@@ -249,6 +312,7 @@ export default function Catalog() {
           {data?.items.length > 0 && (
             <>
               <ProductBin products={data.items} list={listView} />
+              <p className="catalog-foot">{showingText(data.meta)}</p>
               <Pagination meta={data.meta} onPage={goToPage} />
             </>
           )}

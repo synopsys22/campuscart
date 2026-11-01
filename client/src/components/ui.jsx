@@ -62,14 +62,15 @@ export function ErrorState({ error, onRetry }) {
   );
 }
 
-export function Stars({ value = 0, count, size = 15 }) {
+export function Stars({ value = 0, count, size = 15, showValue = true }) {
   const label = `Rated ${value} out of 5${count !== undefined ? `, from ${count} review${count === 1 ? '' : 's'}` : ''}`;
   return (
     <span className="stars" role="img" aria-label={label}>
       {[1, 2, 3, 4, 5].map((n) => (
         <Star key={n} size={size} className={n <= Math.round(value) ? 'star-on' : 'star-off'} aria-hidden="true" />
       ))}
-      {count !== undefined && <span className="stars-count mono">{count}</span>}
+      {count !== undefined && showValue && <span className="stars-value">{Number(value).toFixed(1)}</span>}
+      {count !== undefined && <span className="stars-count">({count})</span>}
     </span>
   );
 }
@@ -78,10 +79,10 @@ export function Price({ price, mrp, large = false }) {
   const off = discountPercent(price, mrp);
   return (
     <span className={`price ${large ? 'price-large' : ''}`}>
-      <strong className="mono">{formatINR(price)}</strong>
+      <strong>{formatINR(price)}</strong>
       {off > 0 && (
         <>
-          <s className="mono muted">{formatINR(mrp)}</s>
+          <s className="muted">{formatINR(mrp)}</s>
           <span className="price-off">{off}% off</span>
         </>
       )}
@@ -109,7 +110,7 @@ export function Stepper({ value, min = 1, max = 99, onChange, disabled, label = 
       <button type="button" aria-label="Decrease quantity" disabled={disabled || value <= min} onClick={() => onChange(value - 1)}>
         <Minus size={15} aria-hidden="true" />
       </button>
-      <output className="mono" aria-live="polite">{value}</output>
+      <output aria-live="polite">{value}</output>
       <button type="button" aria-label="Increase quantity" disabled={disabled || value >= max} onClick={() => onChange(value + 1)}>
         <Plus size={15} aria-hidden="true" />
       </button>
@@ -125,7 +126,7 @@ export function Pagination({ meta, onPage }) {
       <button type="button" className="btn btn-quiet" disabled={page <= 1} onClick={() => onPage(page - 1)}>
         <ChevronLeft size={16} aria-hidden="true" /> Previous
       </button>
-      <span className="mono small muted">
+      <span className="small muted">
         Page {page} of {pages}
       </span>
       <button type="button" className="btn btn-quiet" disabled={page >= pages} onClick={() => onPage(page + 1)}>

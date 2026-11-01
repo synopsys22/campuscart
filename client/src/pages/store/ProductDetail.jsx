@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BadgeCheck, MessageSquare, ShoppingCart, Truck } from 'lucide-react';
+import { BadgeCheck, CalendarX, Check, MessageSquare, ShieldCheck, Truck } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link, useParams } from 'react-router-dom';
 import { productApi, reviewApi } from '../../api/index.js';
+import { Enter, GrowBar, Reveal } from '../../components/motion.jsx';
 import {
+  CartIcon,
   CompareButton,
   ProductBin,
   ProductImage,
@@ -27,7 +29,7 @@ import {
 } from '../../components/ui.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useAddToCart, usePageTitle } from '../../hooks/shop.js';
-import { formatDate } from '../../utils/format.js';
+import { deliveryNote, formatDate } from '../../utils/format.js';
 import { NotFound } from '../NotFound.jsx';
 
 function SpecsTable({ specs }) {
@@ -45,7 +47,7 @@ function SpecsTable({ specs }) {
             {rows.map((row) => (
               <div key={row.key}>
                 <dt className="muted">{row.key}</dt>
-                <dd className="mono">{row.value}</dd>
+                <dd>{row.value}</dd>
               </div>
             ))}
           </dl>
@@ -62,11 +64,11 @@ function RatingBars({ distribution, total }) {
         const count = distribution?.[star] ?? 0;
         return (
           <li key={star}>
-            <span className="mono small">{star}</span>
+            <span className="small">{star}</span>
             <span className="rating-bar" aria-hidden="true">
-              <span style={{ width: total ? `${(count / total) * 100}%` : 0 }} />
+              <GrowBar percent={total ? (count / total) * 100 : 0} color="var(--star)" />
             </span>
-            <span className="mono small muted">{count}<span className="visually-hidden"> reviews with {star} stars</span></span>
+            <span className="small muted">{count}<span className="visually-hidden"> reviews with {star} stars</span></span>
           </li>
         );
       })}
@@ -80,7 +82,7 @@ function StarPicker({ value, onChange }) {
       <legend>Your rating</legend>
       <div className="row">
         {[1, 2, 3, 4, 5].map((star) => (
-          <label key={star} className={`chip mono ${value === star ? 'chip-on' : ''}`}>
+          <label key={star} className={`chip ${value === star ? 'chip-on' : ''}`}>
             <input
               className="visually-hidden"
               type="radio"
@@ -188,14 +190,14 @@ function Reviews({ product }) {
   });
 
   return (
-    <section id="reviews" className="detail-section" aria-labelledby="reviews-heading">
+    <Reveal as="section" id="reviews" className="detail-section" aria-labelledby="reviews-heading">
       <h2 id="reviews-heading">Reviews</h2>
       <div className="reviews">
         <div className="reviews-side stack">
           {product.ratingCount > 0 && (
             <>
-              <p className="reviews-score mono">{product.ratingAvg.toFixed(1)}</p>
-              <Stars value={product.ratingAvg} count={product.ratingCount} size={17} />
+              <p className="reviews-score">{product.ratingAvg.toFixed(1)}</p>
+              <Stars value={product.ratingAvg} count={product.ratingCount} size={17} showValue={false} />
               <RatingBars distribution={data?.summary?.distribution} total={product.ratingCount} />
             </>
           )}
@@ -231,7 +233,7 @@ function Reviews({ product }) {
           <Pagination meta={data?.meta} onPage={setPage} />
         </div>
       </div>
-    </section>
+    </Reveal>
   );
 }
 
@@ -257,6 +259,7 @@ function ProductPage({ slug }) {
     enabled: Boolean(product),
   });
   usePageTitle(product?.name);
+  const { isAdmin } = useAuth();
 
   if (isLoading) return <Spinner />;
   if (error?.status === 404) return <NotFound message="This product is not available." />;
@@ -276,7 +279,9 @@ function ProductPage({ slug }) {
       />
       <div className="detail">
         <div className="detail-gallery">
-          <ProductImage src={images[imageIndex]} alt={product.name} className="detail-image" />
+          <Enter key={images[imageIndex]} from={{ y: 0, scale: 0.98 }}>
+            <ProductImage src={images[imageIndex]} alt={product.name} className="detail-image" />
+          </Enter>
           {images.length > 1 && (
             <div className="row">
               {images.map((image, index) => (
@@ -294,49 +299,77 @@ function ProductPage({ slug }) {
           )}
         </div>
 
-        <div className="detail-info stack">
-          <p className="muted">{product.brand}</p>
-          <h1>{product.name}</h1>
-          {product.ratingCount > 0 && (
-            <a href="#reviews" className="detail-rating">
-              <Stars value={product.ratingAvg} count={product.ratingCount} />
-            </a>
+        <div className="detail-info">
+          <div className="detail-head">
+            <p className="muted">{product.brand}</p>
+            <h1>{product.name}</h1>
+            {product.ratingCount > 0 && (
+              <a href="#reviews" className="detail-rating">
+                <Stars value={product.ratingAvg} count={product.ratingCount} />
+              </a>
+            )}
+          </div>
+
+          <Enter className="buy-box" from={{ y: 14 }} delay={0.08}>
+            <div className="buy-price">
+              <Price price={product.price} mrp={product.mrp} large />
+              <StockNote product={product} />
+            </div>
+            <div className="buy-row">
+              {!soldOut && <Stepper value={qty} max={Math.min(product.stock, 99)} onChange={setQty} />}
+              <button
+                type="button"
+                className="btn btn-primary btn-large buy-button"
+                disabled={soldOut || cart.isPending}
+                onClick={() => cart.add(product, qty)}
+              >
+                <CartIcon added={cart.addedId === product._id} size={18} />
+                {soldOut ? 'Out of stock' : 'Add to cart'}
+              </button>
+            </div>
+            <div className="row buy-secondary">
+              <WishlistButton product={product} withLabel />
+              <CompareButton product={product} withLabel />
+            </div>
+            <ul className="buy-facts small">
+              <li>
+                <Truck size={16} aria-hidden="true" />
+                <span>{deliveryNote(product.price)} Arrives in about 5 days.</span>
+              </li>
+              <li>
+                <CalendarX size={16} aria-hidden="true" />
+                <span>Cancel any time before it ships.</span>
+              </li>
+            </ul>
+          </Enter>
+
+          {isAdmin && (
+            <p className="admin-note admin-area">
+              <ShieldCheck size={16} aria-hidden="true" />
+              <span>Only admins see this: <strong>{product.stock} in stock</strong></span>
+              <Link to="/admin/inventory" className="text-link">Manage inventory</Link>
+            </p>
           )}
-          <Price price={product.price} mrp={product.mrp} large />
-          <StockNote product={product} />
+
           <p>{product.description}</p>
           {product.highlights?.length > 0 && (
             <ul className="highlights">
-              {product.highlights.map((highlight) => <li key={highlight}>{highlight}</li>)}
+              {product.highlights.map((highlight) => (
+                <li key={highlight}>
+                  <Check size={16} aria-hidden="true" />
+                  <span>{highlight}</span>
+                </li>
+              ))}
             </ul>
           )}
-          <div className="buy-row">
-            {!soldOut && <Stepper value={qty} max={Math.min(product.stock, 99)} onChange={setQty} />}
-            <button
-              type="button"
-              className="btn btn-primary btn-large"
-              disabled={soldOut || cart.isPending}
-              onClick={() => cart.add(product, qty)}
-            >
-              <ShoppingCart size={18} aria-hidden="true" />
-              {soldOut ? 'Out of stock' : 'Add to cart'}
-            </button>
-          </div>
-          <div className="row">
-            <WishlistButton product={product} withLabel />
-            <CompareButton product={product} withLabel />
-          </div>
-          <p className="small muted row">
-            <Truck size={16} aria-hidden="true" /> Free shipping on orders of ₹999 or more. Delivery in about 5 days.
-          </p>
           <p className="small muted mono">SKU {product.sku}</p>
         </div>
       </div>
 
-      <section className="detail-section" aria-labelledby="specs-heading">
+      <Reveal as="section" className="detail-section" aria-labelledby="specs-heading">
         <h2 id="specs-heading">Specifications</h2>
         <SpecsTable specs={product.specs} />
-      </section>
+      </Reveal>
 
       <Reviews product={product} />
 

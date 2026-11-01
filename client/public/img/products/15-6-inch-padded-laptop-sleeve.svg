@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
   <defs>
     <linearGradient id="bg-15-6-inch-padded-laptop-sleeve" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0369a1"/>
-      <stop offset="1" stop-color="#082f49"/>
+      <stop offset="0" stop-color="#1f6ccc"/>
+      <stop offset="1" stop-color="#0c234e"/>
     </linearGradient>
-    <pattern id="dots-15-6-inch-padded-laptop-sleeve" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
-    </pattern>
+    <radialGradient id="light-15-6-inch-padded-laptop-sleeve" cx="0.22" cy="0.12" r="0.75">
+      <stop offset="0" stop-color="#74c4ff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#74c4ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-15-6-inch-padded-laptop-sleeve" cx="0.5" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
   <rect width="400" height="400" fill="url(#bg-15-6-inch-padded-laptop-sleeve)"/>
-  <rect width="400" height="400" fill="url(#dots-15-6-inch-padded-laptop-sleeve)"/>
-  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><rect x="95" y="125" width="210" height="150" rx="16"/><path d="M95 165h210"/><rect x="185" y="155" width="30" height="20" rx="5"/><path d="M125 215h150M125 240h90"/></g>
-  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">AmazonBasics</text>
+  <rect width="400" height="400" fill="url(#light-15-6-inch-padded-laptop-sleeve)"/>
+  <rect width="400" height="400" fill="url(#glow-15-6-inch-padded-laptop-sleeve)"/>
+  <g transform="translate(200 200) scale(0.72) translate(-200 -200)" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><rect x="95" y="125" width="210" height="150" rx="16"/><path d="M95 165h210"/><rect x="185" y="155" width="30" height="20" rx="5"/><path d="M125 215h150M125 240h90"/></g>
 </svg>

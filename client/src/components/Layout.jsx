@@ -7,27 +7,37 @@ import {
   Moon,
   Package,
   Search,
+  ShieldCheck,
   ShoppingCart,
   Sun,
   User,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCompare } from '../context/CompareContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useCart } from '../hooks/shop.js';
 import { CommandPalette } from './CommandPalette.jsx';
+import { EASE_OUT, Enter, SPRING, ScrollProgress } from './motion.jsx';
 
 export function Logo() {
+  const gradient = useId();
   return (
     <Link to="/" className="logo" aria-label="CampusCart home">
       <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-        <rect x="9" y="9" width="14" height="14" rx="2" fill="var(--accent)" />
+        <defs>
+          <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="var(--logo-from)" />
+            <stop offset="1" stopColor="var(--logo-to)" />
+          </linearGradient>
+        </defs>
+        <rect x="9" y="9" width="14" height="14" rx="3" fill={`url(#${gradient})`} />
         <path
           d="M13 9V4M19 9V4M13 28v-5M19 28v-5M4 13h5M4 19h5M23 13h5M23 19h5"
-          stroke="var(--accent)"
+          stroke="var(--logo-from)"
           strokeWidth="2"
           strokeLinecap="round"
         />
@@ -44,10 +54,37 @@ const NAV_LINKS = [
   { to: '/categories', label: 'Categories' },
 ];
 
+/** Says which kind of account is logged in. */
+function RolePill() {
+  const { isAdmin } = useAuth();
+  return <span className={`role-pill ${isAdmin ? 'role-pill-admin' : ''}`}>{isAdmin ? 'Admin' : 'Student'}</span>;
+}
+
+/** On every page for an admin: which mode they are in, and the way across to the other side. */
+function AdminStrip() {
+  const { isAdmin } = useAuth();
+  const { pathname } = useLocation();
+  if (!isAdmin) return null;
+  const managing = pathname.startsWith('/admin');
+  return (
+    <aside className="admin-strip" aria-label="Admin mode">
+      <div className="container admin-strip-inner">
+        <ShieldCheck size={16} aria-hidden="true" />
+        <strong>Admin mode</strong>
+        <span className="admin-strip-note">
+          {managing ? 'You are managing the store.' : 'You are viewing the store as customers see it.'}
+        </span>
+        <Link to={managing ? '/' : '/admin'}>{managing ? 'View the store' : 'Go to dashboard'}</Link>
+      </div>
+    </aside>
+  );
+}
+
 function AccountMenu() {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
 
   useEffect(() => setOpen(false), [location]);
@@ -71,6 +108,7 @@ function AccountMenu() {
 
   return (
     <div className="menu">
+      <RolePill />
       <button
         type="button"
         className="icon-btn"
@@ -80,13 +118,21 @@ function AccountMenu() {
       >
         <User size={18} aria-hidden="true" />
       </button>
-      {open && (
-        <>
-          <button type="button" className="menu-backdrop" aria-label="Close menu" tabIndex={-1} onClick={() => setOpen(false)} />
-          <div className="menu-panel">
+      {open && <button type="button" className="menu-backdrop" aria-label="Close menu" tabIndex={-1} onClick={() => setOpen(false)} />}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="menu-panel"
+            initial={reduce ? false : { opacity: 0, scale: 0.96, y: -6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, scale: 0.97, y: -4, transition: { duration: 0.12 } }}
+            transition={{ duration: 0.18, ease: EASE_OUT }}
+            style={{ originX: 1, originY: 0 }}
+          >
             <p className="menu-name">
               <strong>{user.name}</strong>
               <span className="small muted">{user.email}</span>
+              <RolePill />
             </p>
             {isAdmin && (
               <Link to="/admin">
@@ -111,9 +157,9 @@ function AccountMenu() {
             >
               <LogOut size={16} aria-hidden="true" /> Log out
             </button>
-          </div>
-        </>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -121,10 +167,22 @@ function AccountMenu() {
 function CartLink() {
   const { data: cart } = useCart();
   const count = cart?.pricing.itemCount ?? 0;
+  const reduce = useReducedMotion();
   return (
     <Link to="/cart" className="icon-btn cart-link" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
       <ShoppingCart size={18} aria-hidden="true" />
-      {count > 0 && <span className="cart-count mono" aria-hidden="true">{count}</span>}
+      {count > 0 && (
+        <motion.span
+          key={count}
+          className="cart-count"
+          aria-hidden="true"
+          initial={reduce ? false : { scale: 1.6 }}
+          animate={{ scale: 1 }}
+          transition={SPRING}
+        >
+          {count}
+        </motion.span>
+      )}
     </Link>
   );
 }
@@ -132,9 +190,18 @@ function CartLink() {
 function ThemeButton() {
   const { theme, toggleTheme } = useTheme();
   const next = theme === 'dark' ? 'light' : 'dark';
+  const reduce = useReducedMotion();
   return (
     <button type="button" className="icon-btn" aria-label={`Switch to ${next} theme`} onClick={toggleTheme}>
-      {theme === 'dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+      <motion.span
+        key={theme}
+        className="icon-swap"
+        initial={reduce ? false : { rotate: -70, opacity: 0, scale: 0.7 }}
+        animate={{ rotate: 0, opacity: 1, scale: 1 }}
+        transition={SPRING}
+      >
+        {theme === 'dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+      </motion.span>
     </button>
   );
 }
@@ -173,7 +240,12 @@ export function Header() {
         <nav className={`main-nav ${navOpen ? 'main-nav-open' : ''}`} aria-label="Main">
           {NAV_LINKS.map((link) => (
             <NavLink key={link.to} to={link.to}>
-              {link.label}
+              {({ isActive }) => (
+                <>
+                  {isActive && <motion.span layoutId="nav-pill" className="nav-pill" transition={SPRING} />}
+                  <span className="nav-label">{link.label}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -188,17 +260,64 @@ export function Header() {
           <AccountMenu />
         </div>
       </div>
+      <ScrollProgress />
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </header>
   );
 }
 
+/** The side menu on account and admin pages. The highlight slides between items. */
+export function SideNav({ label, links, heading }) {
+  return (
+    <nav className="side-nav" aria-label={label}>
+      {heading && <div className="side-head">{heading}</div>}
+      {links.map((link) => (
+        <NavLink key={link.to} to={link.to} end={link.end}>
+          {({ isActive }) => (
+            <>
+              {isActive && <motion.span layoutId={`side-pill-${label}`} className="nav-pill" transition={SPRING} />}
+              <span className="nav-label">
+                {link.icon && <link.icon size={16} aria-hidden="true" />}
+                {link.label}
+              </span>
+            </>
+          )}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
+/** One line at the top of a page, saying what this role can do here. */
+export function RoleBanner({ links }) {
+  const { pathname } = useLocation();
+  const current = links.find((link) => (link.end ? pathname === link.to : pathname.startsWith(link.to)));
+  if (!current?.hint) return null;
+  return <p className="role-banner">{current.hint}</p>;
+}
+
 export function CompareTray() {
   const compare = useCompare();
   const { pathname } = useLocation();
-  if (compare.items.length === 0 || pathname === '/compare' || pathname.startsWith('/admin')) return null;
+  const reduce = useReducedMotion();
+  const show = compare.items.length > 0 && pathname !== '/compare' && !pathname.startsWith('/admin');
   return (
-    <aside className="compare-tray" aria-label="Products to compare">
+    <AnimatePresence>
+      {show && <CompareTrayPanel compare={compare} reduce={reduce} />}
+    </AnimatePresence>
+  );
+}
+
+function CompareTrayPanel({ compare, reduce }) {
+  return (
+    <motion.aside
+      className="compare-tray"
+      aria-label="Products to compare"
+      initial={reduce ? false : { y: 80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { y: 60, opacity: 0, transition: { duration: 0.16 } }}
+      transition={SPRING}
+    >
       <div className="compare-tray-items">
         {compare.items.map((item) => (
           <img key={item._id} src={item.image} alt={item.name} title={item.name} />
@@ -215,7 +334,7 @@ export function CompareTray() {
           <GitCompareArrows size={14} aria-hidden="true" /> Compare
         </Link>
       </div>
-    </aside>
+    </motion.aside>
   );
 }
 
@@ -252,24 +371,40 @@ export function Footer() {
 /** Scrolls back to the top when moving to a new page. */
 function ScrollReset() {
   const { pathname } = useLocation();
+  const firstPage = useRef(true);
   // The braces matter: React treats a returned value as a cleanup function, and
   // current browsers return a promise from scrollTo.
   useEffect(() => {
     window.scrollTo(0, 0);
+    if (firstPage.current) {
+      firstPage.current = false;
+      return;
+    }
+    // Screen readers and keyboards continue from the new page, not the link that was left behind.
+    const main = document.getElementById('main');
+    if (main && !main.contains(document.activeElement)) main.focus({ preventScroll: true });
   }, [pathname]);
   return null;
 }
 
+/** Account and admin pages keep their side menu in place, and animate their own content. */
+const transitionKey = (pathname) =>
+  /^\/(account|admin)(\/|$)/.test(pathname) ? pathname.split('/')[1] : pathname;
+
 export function StoreLayout() {
+  const { pathname } = useLocation();
   return (
     <>
       <a className="skip-link" href="#main">
         Skip to content
       </a>
       <ScrollReset />
+      <AdminStrip />
       <Header />
-      <main id="main">
-        <Outlet />
+      <main id="main" tabIndex={-1}>
+        <Enter key={transitionKey(pathname)}>
+          <Outlet />
+        </Enter>
       </main>
       <Footer />
       <CompareTray />

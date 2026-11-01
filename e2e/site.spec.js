@@ -10,6 +10,89 @@ test('the home page shows the board, kits and products', async ({ page }) => {
   await expect(page).toHaveURL(/category=cs-textbooks/);
 });
 
+test('the home page offers every category before any products', async ({ page }) => {
+  await page.goto('/');
+  const categories = page.getByRole('region', { name: 'Shop by category' });
+  await expect(categories.getByRole('link')).toHaveCount(12);
+  const categoriesTop = (await categories.boundingBox()).y;
+  const productsTop = (await page.getByRole('heading', { name: 'Popular with students' }).boundingBox()).y;
+  expect(categoriesTop).toBeLessThan(productsTop);
+
+  await categories.getByRole('link', { name: /Stationery/ }).click();
+  await expect(page).toHaveURL(/category=stationery/);
+});
+
+test('the home page states what every order includes', async ({ page }) => {
+  await page.goto('/');
+  const promises = page.getByRole('list', { name: 'What every order includes' });
+  await expect(promises.getByRole('listitem')).toHaveText([
+    /Free delivery from ₹999/,
+    /Cash on delivery/,
+    /Cancel any time before it ships/,
+    /Reviews from verified buyers/,
+  ]);
+});
+
+test('product cards show the rating as a number and keep their layout without reviews', async ({ page }) => {
+  await page.goto('/products');
+  const cards = page.locator('.bin-cell');
+  await expect(cards.first()).toBeVisible();
+  const cardCount = await cards.count();
+  await expect(page.locator('.bin-cell .stars-value, .bin-cell .stars-none')).toHaveCount(cardCount);
+  await expect(page.locator('.bin-cell .stars-value').first()).toHaveText(/^\d\.\d$/);
+});
+
+test('the catalog repeats its product count below the list', async ({ page }) => {
+  await page.goto('/products');
+  const count = page.locator('.catalog-foot');
+  await expect(count).toHaveText(/^Showing 1–\d+ of \d+ products$/);
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(count).toHaveText(/^Showing (?!1–)\d+–\d+ of \d+ products$/);
+});
+
+test('the product page states delivery cost and cancellation beside the buy button', async ({ page }) => {
+  await page.goto('/products/raspberry-pi-5-8-gb');
+  const buyBox = page.locator('.buy-box');
+  await expect(buyBox.getByRole('button', { name: 'Add to cart' })).toBeVisible();
+  await expect(buyBox).toContainText('Free delivery');
+  await expect(buyBox).toContainText('Cancel any time before it ships');
+
+  await page.goto('/products/clean-code');
+  await expect(page.locator('.buy-box')).toContainText('₹49 delivery, free on orders of ₹999 or more');
+});
+
+test('the dashboard separates what needs attention from the headline figures', async ({ page }) => {
+  await logInAs(page, 'Admin');
+  await page.goto('/admin');
+  const attention = page.getByRole('region', { name: 'Needs attention' });
+  await attention.getByRole('link', { name: /Orders to confirm/ }).click();
+  await expect(page).toHaveURL(/\/admin\/orders\?status=Pending/);
+});
+
+test('home page products sit two to a row on a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const section = page.getByRole('region', { name: 'Popular with students' });
+  const cards = section.locator('.bin-cell');
+  await expect(cards.first()).toBeVisible();
+  await cards.nth(1).scrollIntoViewIfNeeded();
+  // Cards arrive one after another, so this compares them once they have settled.
+  await expect
+    .poll(async () => {
+      const [first, second] = await Promise.all([cards.nth(0).boundingBox(), cards.nth(1).boundingBox()]);
+      return Math.abs(second.y - first.y);
+    })
+    .toBeLessThan(0.5);
+});
+
+test('the footer reaches the bottom of the window on a short page', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1400 });
+  await page.goto('/login');
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  const footer = await page.locator('.site-footer').boundingBox();
+  expect(footer.y + footer.height).toBeGreaterThanOrEqual(1399);
+});
+
 test('the theme choice is remembered', async ({ page }) => {
   await page.goto('/');
   const html = page.locator('html');
