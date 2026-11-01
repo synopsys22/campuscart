@@ -25,7 +25,12 @@ function isPortOpen(port, host = '127.0.0.1') {
 }
 
 async function connectTo(uri, mode) {
-  await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+  await mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 5000,
+    // On Windows, stopping the embedded mongod is an instant kill, which would lose
+    // anything not yet in the journal. Waiting for the journal makes each write durable.
+    writeConcern: { w: 1, j: true },
+  });
   return { mode, uri };
 }
 
