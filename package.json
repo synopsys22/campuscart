@@ -1,0 +1,26 @@
+{
+  "name": "campuscart",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CampusCart: a full-stack e-commerce platform for Computer Science students.",
+  "type": "module",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "start": "node scripts/start.js",
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client",
+    "db:reset": "npm run db:reset -w server",
+    "test": "npm test -w server",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "concurrently": "^10.0.6"
+  }
+}

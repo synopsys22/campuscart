@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+coverage/
+
+# Admin uploads made while running the app (seeded images are generated elsewhere)
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Test and tooling output
+test-results/
+playwright-report/
+.superpowers/
+.vite/
