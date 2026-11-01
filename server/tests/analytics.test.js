@@ -74,7 +74,8 @@ describe('analytics figures', () => {
 
   it('leaves out orders older than the range', async () => {
     const { bearer } = await scenario();
-    await Order.updateMany({}, { createdAt: new Date(Date.now() - 20 * 86400000) }, { timestamps: false });
+    // Goes straight to the driver because Mongoose treats createdAt as read-only.
+    await Order.collection.updateMany({}, { $set: { createdAt: new Date(Date.now() - 20 * 86400000) } });
     const week = await get(bearer, 'revenue?range=7d');
     expect(week.body.data.reduce((sum, row) => sum + row.revenue, 0)).toBe(0);
     const month = await get(bearer, 'revenue?range=30d');

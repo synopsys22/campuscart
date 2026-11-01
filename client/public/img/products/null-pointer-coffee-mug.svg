@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
+  <defs>
+    <linearGradient id="bg-null-pointer-coffee-mug" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a21caf"/>
+      <stop offset="1" stop-color="#4a044e"/>
+    </linearGradient>
+    <pattern id="dots-null-pointer-coffee-mug" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg-null-pointer-coffee-mug)"/>
+  <rect width="400" height="400" fill="url(#dots-null-pointer-coffee-mug)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M120 130h130v130a30 30 0 0 1-30 30h-70a30 30 0 0 1-30-30z"/><path d="M250 165h20a30 30 0 0 1 0 60h-20"/><path d="M155 100v-15M185 100v-15M215 100v-15"/></g>
+  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">CampusCart</text>
+</svg>

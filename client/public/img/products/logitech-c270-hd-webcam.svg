@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
+  <defs>
+    <linearGradient id="bg-logitech-c270-hd-webcam" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0369a1"/>
+      <stop offset="1" stop-color="#082f49"/>
+    </linearGradient>
+    <pattern id="dots-logitech-c270-hd-webcam" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg-logitech-c270-hd-webcam)"/>
+  <rect width="400" height="400" fill="url(#dots-logitech-c270-hd-webcam)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="200" cy="170" r="60"/><circle cx="200" cy="170" r="26"/><circle cx="200" cy="170" r="8"/><path d="M170 225l-15 50h90l-15-50"/></g>
+  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">Logitech</text>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
+  <defs>
+    <linearGradient id="bg-sudo-make-me-a-sandwich-hoodie" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a21caf"/>
+      <stop offset="1" stop-color="#4a044e"/>
+    </linearGradient>
+    <pattern id="dots-sudo-make-me-a-sandwich-hoodie" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg-sudo-make-me-a-sandwich-hoodie)"/>
+  <rect width="400" height="400" fill="url(#dots-sudo-make-me-a-sandwich-hoodie)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M150 125l-55 45 20 45 30-16v105h110V199l30 16 20-45-55-45"/><path d="M150 125a55 45 0 0 0 100 0"/><path d="M175 255h50l10 49h-70z"/><path d="M190 165v30M210 165v30"/></g>
+  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">CampusCart</text>
+</svg>

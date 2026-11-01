@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
+  <defs>
+    <linearGradient id="bg-computer-networking-a-top-down-approach" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b45309"/>
+      <stop offset="1" stop-color="#451a03"/>
+    </linearGradient>
+    <pattern id="dots-computer-networking-a-top-down-approach" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg-computer-networking-a-top-down-approach)"/>
+  <rect width="400" height="400" fill="url(#dots-computer-networking-a-top-down-approach)"/>
+  <g transform="translate(0 0)">
+    <rect x="115" y="62" width="200" height="272" rx="8" fill="#000000" opacity="0.28"/>
+    <rect x="105" y="52" width="200" height="272" rx="8" fill="#000000" opacity="0.25" stroke="#ffffff" stroke-opacity="0.45" stroke-width="2"/>
+    <rect x="105" y="52" width="16" height="272" fill="#ffffff" opacity="0.28"/>
+    <path d="M145 95h120" stroke="#ffffff" stroke-width="3" opacity="0.7"/>
+  </g>
+  <g transform="translate(-5 0)"><text x="215" y="147" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="26" font-weight="700" fill="#ffffff">Computer</text><text x="215" y="183" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="26" font-weight="700" fill="#ffffff">Networking</text></g>
+  <text x="210" y="285" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="12" fill="#ffffff" opacity="0.88">Kurose, Ross</text>
+  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">Pearson</text>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
+  <defs>
+    <linearGradient id="bg-it-works-on-my-machine-t-shirt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a21caf"/>
+      <stop offset="1" stop-color="#4a044e"/>
+    </linearGradient>
+    <pattern id="dots-it-works-on-my-machine-t-shirt" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg-it-works-on-my-machine-t-shirt)"/>
+  <rect width="400" height="400" fill="url(#dots-it-works-on-my-machine-t-shirt)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M150 115l-60 40 20 45 35-16v120h110V184l35 16 20-45-60-40"/><path d="M150 115a55 28 0 0 0 100 0"/><path d="M175 200h50"/></g>
+  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">CampusCart</text>
+</svg>

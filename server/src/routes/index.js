@@ -1,19 +1,24 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
+import * as analyticsController from '../controllers/analytics.controller.js';
 import * as authController from '../controllers/auth.controller.js';
 import * as cartController from '../controllers/cart.controller.js';
 import * as categoryController from '../controllers/category.controller.js';
 import * as couponController from '../controllers/coupon.controller.js';
+import * as kitController from '../controllers/kit.controller.js';
 import * as orderController from '../controllers/order.controller.js';
 import * as productController from '../controllers/product.controller.js';
 import * as reviewController from '../controllers/review.controller.js';
+import * as setupController from '../controllers/setup.controller.js';
 import * as userController from '../controllers/user.controller.js';
 import * as wishlistController from '../controllers/wishlist.controller.js';
 import { auth, optionalAuth, requireAdmin } from '../middleware/auth.js';
+import { imageUploaded, uploadImage } from '../middleware/upload.js';
 import { validate } from '../middleware/validate.js';
 import * as authV from '../validators/auth.validators.js';
 import * as catalogV from '../validators/catalog.validators.js';
 import { addressSchema, idParams } from '../validators/common.js';
+import * as extrasV from '../validators/extras.validators.js';
 import * as shopV from '../validators/shop.validators.js';
 
 const router = Router();
@@ -106,5 +111,30 @@ router.get('/orders', admin, validate({ query: shopV.listOrdersQuery }), orderCo
 router.get('/orders/:id', auth, validate({ params: idParams }), orderController.getOrder);
 router.post('/orders/:id/cancel', auth, validate({ params: idParams, body: shopV.cancelOrderSchema }), orderController.cancelMyOrder);
 router.patch('/orders/:id/status', admin, validate({ params: idParams, body: shopV.updateOrderStatusSchema }), orderController.updateOrderStatus);
+
+// Project Kits
+router.get('/kits', optionalAuth, kitController.listKits);
+router.post('/kits', admin, validate({ body: extrasV.createKitSchema }), kitController.createKit);
+router.post('/kits/:id/add-to-cart', auth, validate({ params: idParams }), kitController.addKitToCart);
+router.patch('/kits/:id', admin, validate({ params: idParams, body: extrasV.updateKitSchema }), kitController.updateKit);
+router.delete('/kits/:id', admin, validate({ params: idParams }), kitController.deleteKit);
+router.get('/kits/:slug', optionalAuth, kitController.getKit);
+
+// Build Your Setup
+router.get('/setups/slots', setupController.listSlots);
+router.get('/setups', auth, setupController.listSetups);
+router.post('/setups', auth, validate({ body: extrasV.createSetupSchema }), setupController.createSetup);
+router.patch('/setups/:id', auth, validate({ params: idParams, body: extrasV.updateSetupSchema }), setupController.updateSetup);
+router.delete('/setups/:id', auth, validate({ params: idParams }), setupController.deleteSetup);
+router.post('/setups/:id/add-to-cart', auth, validate({ params: idParams }), setupController.addSetupToCart);
+
+// Admin: analytics and uploads
+router.get('/admin/analytics/summary', admin, analyticsController.summary);
+router.get('/admin/analytics/revenue', admin, validate({ query: extrasV.revenueQuery }), analyticsController.revenue);
+router.get('/admin/analytics/category-sales', admin, analyticsController.categorySales);
+router.get('/admin/analytics/top-products', admin, analyticsController.topProducts);
+router.get('/admin/analytics/order-status', admin, analyticsController.orderStatus);
+router.get('/admin/analytics/low-stock', admin, analyticsController.lowStock);
+router.post('/uploads', admin, uploadImage, imageUploaded);
 
 export default router;

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img">
+  <defs>
+    <linearGradient id="bg-raspberry-pi-5-8-gb" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#042f2e"/>
+    </linearGradient>
+    <pattern id="dots-raspberry-pi-5-8-gb" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#ffffff" opacity="0.13"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg-raspberry-pi-5-8-gb)"/>
+  <rect width="400" height="400" fill="url(#dots-raspberry-pi-5-8-gb)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><rect x="110" y="120" width="180" height="150" rx="10"/><rect x="170" y="165" width="60" height="60" rx="4"/><path d="M135 120v-16M160 120v-16M185 120v-16M210 120v-16M235 120v-16M260 120v-16M135 270v16M160 270v16M185 270v16M210 270v16M235 270v16M260 270v16"/><circle cx="130" cy="145" r="5"/><circle cx="270" cy="245" r="5"/><path d="M230 195h30M140 195h30"/></g>
+  <text x="200" y="362" text-anchor="middle" font-family="'JetBrains Mono',Consolas,monospace" font-size="17" fill="#ffffff" opacity="0.82">Raspberry Pi</text>
+</svg>
