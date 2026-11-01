@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="CampusCart is an online store for Computer Science students: dev boards, laptops, textbooks and everyday college gear." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>CampusCart</title>
+    <script>
+      // Sets the theme before the first paint, so the page never flashes the wrong colours.
+      (function () {
+        var theme = null;
+        try {
+          theme = localStorage.getItem('campuscart-theme');
+        } catch (error) {
+          theme = null;
+        }
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

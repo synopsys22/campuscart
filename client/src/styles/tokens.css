@@ -1,0 +1,86 @@
+/* Dark theme: a circuit board. Green solder mask, gold plating, white silkscreen. */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0a241d;
+  --surface: #0f2e26;
+  --raised: #153a30;
+  --line: #2a5549;
+  --line-strong: #3f7363;
+  --text: #edf5f0;
+  --muted: #a9c4b9;
+  --accent: #e8b84a;
+  --accent-hover: #f2ca68;
+  --on-accent: #1c1503;
+  --accent-soft: rgba(232, 184, 74, 0.14);
+  --trace: #c9973f;
+  --trace-idle: #3a6657;
+  --success: #6fdca6;
+  --success-soft: rgba(111, 220, 166, 0.14);
+  --warning: #f5ae4e;
+  --warning-soft: rgba(245, 174, 78, 0.14);
+  --danger: #ff8f80;
+  --danger-soft: rgba(255, 143, 128, 0.14);
+  --info: #86c5f5;
+  --info-soft: rgba(134, 197, 245, 0.14);
+  --overlay: rgba(3, 14, 11, 0.72);
+  --shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+/* Light theme: a printed datasheet. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f3f6f3;
+  --surface: #ffffff;
+  --raised: #e8eeea;
+  --line: #cbd8d1;
+  --line-strong: #93aaa0;
+  --text: #0d2a22;
+  --muted: #47625a;
+  --accent: #0f6b52;
+  --accent-hover: #0b5742;
+  --on-accent: #ffffff;
+  --accent-soft: rgba(15, 107, 82, 0.1);
+  --trace: #a9761f;
+  --trace-idle: #b4c6bd;
+  --success: #0a6039;
+  --success-soft: rgba(10, 96, 57, 0.1);
+  --warning: #794a05;
+  --warning-soft: rgba(153, 96, 11, 0.12);
+  --danger: #a32416;
+  --danger-soft: rgba(185, 44, 28, 0.09);
+  --info: #0f5288;
+  --info-soft: rgba(19, 95, 155, 0.1);
+  --overlay: rgba(13, 42, 34, 0.5);
+  --shadow: 0 16px 48px rgba(13, 42, 34, 0.18);
+}
+
+:root {
+  --font-sans: 'IBM Plex Sans Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', Consolas, 'Courier New', monospace;
+
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: clamp(2.25rem, 5vw, 3.5rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+
+  /* Sharp corners for structure, slightly softer for things you press. */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+
+  --page-width: 1240px;
+  --gutter: clamp(1rem, 3vw, 2rem);
+  --header-height: 64px;
+}

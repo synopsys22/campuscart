@@ -291,6 +291,7 @@ async function seedReviews({ orderDocs, student, productDocs, categoryDocs, rand
   const categorySlug = new Map(categoryDocs.map((doc) => [doc._id.toString(), doc.slug]));
   const productById = new Map(productDocs.map((doc) => [doc._id.toString(), doc]));
   const seen = new Set();
+  const reviewTurns = new Map();
   const reviews = [];
 
   for (const order of orderDocs) {
@@ -306,7 +307,12 @@ async function seedReviews({ orderDocs, student, productDocs, categoryDocs, rand
       if (!isDemoStudent && random.next() > 0.9) continue;
 
       const product = productById.get(item.product.toString());
-      const [title, body] = random.pick(reviewTextByCategory[categorySlug.get(product.category.toString())]);
+      // Walks through the category's text in turn, so one product doesn't repeat a review.
+      const pool = reviewTextByCategory[categorySlug.get(product.category.toString())];
+      const productKey = item.product.toString();
+      const turn = reviewTurns.get(productKey) ?? random.int(0, pool.length - 1);
+      reviewTurns.set(productKey, turn + 1);
+      const [title, body] = pool[turn % pool.length];
       const at = addDays(order.statusHistory.at(-1).at, random.next() * 3);
       const createdAt = at > new Date() ? new Date() : at;
       reviews.push({
