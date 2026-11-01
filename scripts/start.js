@@ -29,7 +29,7 @@ function buildIsCurrent() {
 
 if (!buildIsCurrent()) {
   console.log('Building the React app. This takes a few seconds and only happens after changes...');
-  const build = spawnSync('npm', ['run', 'build', '-w', 'client'], { cwd: root, stdio: 'inherit', shell: true });
+  const build = spawnSync('npm run build -w client', { cwd: root, stdio: 'inherit', shell: true });
   if (build.status !== 0) process.exit(build.status ?? 1);
 }
 
