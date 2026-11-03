@@ -31,8 +31,8 @@ function describeItem({ product, qty }) {
   };
 }
 
-/** Builds what the client sees: live prices, stock warnings and totals. */
-export async function buildCartView(cart, userId) {
+/** Builds what the client sees: live prices, stock warnings and totals for a delivery choice. */
+export async function buildCartView(cart, userId, deliveryMethod = 'standard') {
   await cart.populate('items.product', PRODUCT_FIELDS);
   const items = cart.items.filter((item) => item.product).map(describeItem);
   const lines = items.map(({ product, qty }) => ({ price: product.price, mrp: product.mrp, qty }));
@@ -54,7 +54,7 @@ export async function buildCartView(cart, userId) {
     couponCode: cart.couponCode,
     couponError,
     coupon: coupon && { code: coupon.code, description: coupon.description },
-    pricing: calculateTotals(lines, coupon),
+    pricing: calculateTotals(lines, coupon, deliveryMethod),
     // A coupon that no longer applies would be refused when the order is placed.
     canCheckout: items.length > 0 && items.every((item) => item.available) && !couponError,
   };

@@ -146,8 +146,34 @@ export const orderApi = {
   mine: (params) => paged(get('/orders/my', params)),
   get: (id) => data(http.get(`/orders/${id}`)),
   cancel: (id, reason) => data(http.post(`/orders/${id}/cancel`, { reason })),
+  requestReturn: (id, body) => data(http.post(`/orders/${id}/return`, body)),
   listAll: (params) => paged(get('/orders', params)),
   setStatus: (id, body) => data(http.patch(`/orders/${id}/status`, body)),
+  decideReturn: (id, body) => data(http.patch(`/orders/${id}/return`, body)),
+};
+
+export const deliveryApi = {
+  options: () => data(http.get('/delivery/options')),
+  estimate: (pincode) => data(get('/delivery/estimate', { pincode })),
+  track: (trackingNumber) => data(http.get(`/track/${encodeURIComponent(trackingNumber)}`)),
+};
+
+export const paymentApi = {
+  testDetails: () => data(http.get('/payments/test-details')),
+  create: (body) => data(http.post('/payments', body)),
+  get: (id) => data(http.get(`/payments/${id}`)),
+  card: (id, body) => data(http.post(`/payments/${id}/card`, body)),
+  otp: (id, otp) => data(http.post(`/payments/${id}/otp`, { otp })),
+  upi: (id, upiId) => data(http.post(`/payments/${id}/upi`, { upiId })),
+  cancel: (id) => data(http.post(`/payments/${id}/cancel`)),
+  approval: (id, token) => data(get(`/payments/${id}/approval`, { token })),
+  approve: (id, token) => data(http.post(`/payments/${id}/approve`, { token })),
+  listAll: (params) => paged(get('/admin/payments', params)),
+  walletActivity: (params) => paged(get('/admin/wallet-transactions', params)),
+};
+
+export const walletApi = {
+  get: (params) => paged(get('/wallet', params)),
 };
 
 export const reviewApi = {

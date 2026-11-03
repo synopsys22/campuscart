@@ -50,27 +50,76 @@ export async function addFromProductPage(page, slug) {
   await expect(page.getByText(/^Added .* to your cart$/).first()).toBeVisible();
 }
 
-/** Completes checkout from the cart. Adds an address if the account has none. */
-export async function checkOut(page, paymentLabel = 'Cash on Delivery') {
+/** Pays in the demo gateway window with the first successful test card and the demo OTP. */
+export async function payByTestCard(page) {
+  const dialog = page.getByRole('dialog', { name: 'Pay by card' });
+  await dialog.getByRole('button', { name: 'Use' }).first().click();
+  await dialog.getByRole('button', { name: /^Pay ₹/ }).click();
+  await dialog.getByLabel('One-time password (OTP)').fill('123456');
+  await dialog.getByRole('button', { name: 'Verify and pay' }).click();
+}
+
+/** Pays in the demo gateway window by approving the UPI QR code on the same device. */
+export async function payByUpiQr(page) {
+  const dialog = page.getByRole('dialog', { name: 'Pay by UPI' });
+  await dialog.getByRole('button', { name: 'No phone handy? Approve on this device' }).click();
+}
+
+/**
+ * Completes checkout from the cart. Adds an address if the account has none, then pays
+ * the way a student would: through the gateway window for card and UPI.
+ */
+export async function checkOut(page, paymentLabel = 'Cash on Delivery', { delivery = 'Standard delivery' } = {}) {
   await page.goto('/cart');
   await page.getByRole('button', { name: 'Go to checkout' }).click();
-  await expect(page.getByRole('heading', { name: 'Where should we deliver?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'How should we get it to you?' })).toBeVisible();
+  await page.getByRole('radio', { name: new RegExp(delivery) }).check();
 
-  const line1 = page.getByLabel('Address line 1');
-  if (await line1.isVisible()) {
-    await line1.fill('Room 101, North Hostel');
-    await page.getByLabel('City').fill('Chennai');
-    await page.getByLabel('State').fill('Tamil Nadu');
-    await page.getByLabel('Pincode').fill('600001');
-    await page.getByRole('button', { name: 'Save address' }).click();
+  if (delivery === 'Campus pickup') {
+    await page.getByRole('radio', { name: /Central Library entrance/ }).check();
+    await page.getByText('2 PM to 4 PM').click();
+  } else {
+    const line1 = page.getByLabel('Address line 1');
+    if (await line1.isVisible()) {
+      await line1.fill('Room 101, North Hostel');
+      await page.getByLabel('City').fill('Chennai');
+      await page.getByLabel('State').fill('Tamil Nadu');
+      await page.getByLabel('Pincode').fill('600001');
+      await page.getByRole('button', { name: 'Save address' }).click();
+    }
   }
   await page.getByRole('button', { name: 'Continue to payment' }).click();
   await page.getByText(paymentLabel, { exact: true }).click();
   await page.getByRole('button', { name: 'Review order' }).click();
-  await page.getByRole('button', { name: /^Place order/ }).click();
+
+  if (paymentLabel === 'Card (demo)') {
+    await page.getByRole('button', { name: /^Pay ₹/ }).click();
+    await payByTestCard(page);
+  } else if (paymentLabel === 'UPI (demo)') {
+    await page.getByRole('button', { name: /^Pay ₹/ }).click();
+    await payByUpiQr(page);
+  } else {
+    await page.getByRole('button', { name: /^Place order/ }).click();
+  }
   await expect(page.getByRole('heading', { name: 'Your order is placed' })).toBeVisible();
   return page.locator('.success p.mono').first().innerText();
 }
+
+/** Reads the delivery code the way the customer would, from their own order page data. */
+export async function deliveryCodeFor(request, token, orderNumber) {
+  const headers = { Authorization: `Bearer ${token}` };
+  const mine = await (await request.get('/api/orders/my?limit=50', { headers })).json();
+  const order = mine.data.find((entry) => entry.orderNumber === orderNumber);
+  const detail = await (await request.get(`/api/orders/${order._id}`, { headers })).json();
+  return detail.data.delivery.code;
+}
+
+export async function walletBalance(request, token) {
+  const response = await request.get('/api/wallet', { headers: { Authorization: `Bearer ${token}` } });
+  return (await response.json()).summary.balance;
+}
+
+export const tokenOf = (page) => page.evaluate(() => localStorage.getItem('campuscart-token'));
 
 export async function stockOf(request, slug) {
   const response = await request.get(`/api/products/${slug}`);

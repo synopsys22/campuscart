@@ -16,6 +16,8 @@ const PAGES = [
   { label: 'Cart', to: '/cart' },
   { label: 'Wishlist', to: '/wishlist' },
   { label: 'My orders', to: '/account/orders' },
+  { label: 'Wallet', to: '/account/wallet' },
+  { label: 'Track a parcel', to: '/track' },
   { label: 'My profile', to: '/account' },
 ];
 

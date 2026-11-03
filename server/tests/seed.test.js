@@ -2,7 +2,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { PROJECT_ROOT } from '../src/config/env.js';
-import { Category, Coupon, Kit, Order, Product, Review, Setup, User } from '../src/models/index.js';
+import {
+  Category,
+  Coupon,
+  Kit,
+  Order,
+  Payment,
+  Product,
+  Review,
+  Setup,
+  User,
+  WalletTransaction,
+} from '../src/models/index.js';
 import { nextOrderNumber } from '../src/services/order.service.js';
 import { ensureSeeded, seedDatabase } from '../seed/seed.js';
 import { api, useDatabase } from './support/helpers.js';
@@ -58,7 +69,7 @@ describe('seedDatabase', () => {
   it('gives the demo student one order in every status and an item awaiting review', async () => {
     const student = await User.findOne({ email: 'student@campuscart.dev' });
     const statuses = await Order.distinct('status', { user: student._id });
-    expect(statuses.sort()).toEqual(['Cancelled', 'Confirmed', 'Delivered', 'Pending', 'Shipped']);
+    expect(statuses.sort()).toEqual(['Cancelled', 'Confirmed', 'Delivered', 'Out for Delivery', 'Pending', 'Returned', 'Shipped']);
 
     const delivered = await Order.find({ user: student._id, status: 'Delivered' });
     const bought = delivered.flatMap((order) => order.items.map((item) => item.product.toString()));
@@ -103,8 +114,74 @@ describe('seedDatabase', () => {
     }
   });
 
-  it('sets soldCount from non-cancelled orders', async () => {
-    const orders = await Order.find({ status: { $ne: 'Cancelled' } });
+  it('gives the demo student a delivery code, a pickup order and an order they can still return', async () => {
+    const student = await User.findOne({ email: 'student@campuscart.dev' });
+    const login = await api().post('/api/auth/login').send({ email: 'student@campuscart.dev', password: 'Student@123' });
+    const bearer = `Bearer ${login.body.data.token}`;
+
+    const outForDelivery = await Order.findOne({ user: student._id, status: 'Out for Delivery' });
+    const detail = await api().get(`/api/orders/${outForDelivery._id}`).set('Authorization', bearer);
+    expect(detail.body.data.delivery.code).toMatch(/^\d{4}$/);
+    expect(detail.body.data.delivery.trackingNumber).toMatch(/^CCT\d{10}$/);
+
+    expect(await Order.exists({ user: student._id, 'delivery.method': 'pickup' })).toBeTruthy();
+    const delivered = await Order.find({ user: student._id, status: 'Delivered' });
+    const views = await Promise.all(delivered.map((order) => api().get(`/api/orders/${order._id}`).set('Authorization', bearer)));
+    expect(views.some((view) => new Date(view.body.data.returnWindowEndsAt) > new Date())).toBe(true);
+  });
+
+  it('keeps every shipped order trackable and every step in time order', async () => {
+    for (const order of await Order.find()) {
+      const shipped = order.statusHistory.some((event) => event.status === 'Shipped');
+      expect(Boolean(order.delivery.trackingNumber), order.orderNumber).toBe(shipped);
+      const times = order.statusHistory.map((event) => event.at.getTime());
+      expect(times, order.orderNumber).toEqual([...times].sort((a, b) => a - b));
+      expect(times.at(-1), order.orderNumber).toBeLessThanOrEqual(Date.now());
+      expect(order.shippingAddress === null, order.orderNumber).toBe(order.delivery.method === 'pickup');
+    }
+    const numbers = await Order.distinct('delivery.trackingNumber', { 'delivery.trackingNumber': { $ne: null } });
+    expect(numbers.length).toBe(await Order.countDocuments({ 'delivery.trackingNumber': { $ne: null } }));
+  });
+
+  it('has returns in every state for the admin to see', async () => {
+    for (const status of ['Requested', 'Approved', 'Rejected']) {
+      expect(await Order.countDocuments({ 'returnRequest.status': status }), status).toBeGreaterThan(0);
+    }
+    for (const order of await Order.find({ 'returnRequest.status': 'Requested' })) {
+      expect(order.status).toBe('Delivered');
+    }
+  });
+
+  it('backs every paid order with a payment record, plus some failed attempts', async () => {
+    const paid = await Order.find({ 'payment.status': { $in: ['Paid', 'Refunded'] } });
+    for (const order of paid) {
+      const record = await Payment.findById(order.payment.record);
+      expect(record, order.orderNumber).not.toBeNull();
+      expect(record.reference).toBe(order.payment.transactionRef);
+      expect(record.amount).toBe(order.total);
+      expect(record.status).toBe(order.payment.status === 'Refunded' ? 'Refunded' : 'Succeeded');
+    }
+    expect(await Payment.countDocuments({ status: { $in: ['Failed', 'Expired'] } })).toBeGreaterThan(0);
+    expect(await Payment.countDocuments({ purpose: 'wallet_topup' })).toBeGreaterThan(0);
+  });
+
+  it('keeps each wallet statement adding up to its balance', async () => {
+    for (const user of await User.find()) {
+      const lines = await WalletTransaction.find({ user: user._id }).sort({ createdAt: 1, _id: 1 });
+      let balance = 0;
+      for (const line of lines) {
+        balance += line.type === 'credit' ? line.amount : -line.amount;
+        expect(balance, user.email).toBeGreaterThanOrEqual(0);
+        expect(line.balanceAfter, user.email).toBe(balance);
+      }
+      expect(user.walletBalance, user.email).toBe(balance);
+    }
+    const student = await User.findOne({ email: 'student@campuscart.dev' });
+    expect(await WalletTransaction.countDocuments({ user: student._id })).toBeGreaterThan(0);
+  });
+
+  it('sets soldCount from orders that were neither cancelled nor returned', async () => {
+    const orders = await Order.find({ status: { $nin: ['Cancelled', 'Returned'] } });
     const units = new Map();
     for (const order of orders) {
       for (const item of order.items) {

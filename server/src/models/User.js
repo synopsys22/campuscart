@@ -22,6 +22,8 @@ const userSchema = new mongoose.Schema(
     semester: { type: Number, min: 1, max: 8, default: null },
     addresses: [addressSchema],
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+    // Demo money in the CampusCart wallet, in whole rupees.
+    walletBalance: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true },
   },
   {

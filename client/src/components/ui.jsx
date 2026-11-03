@@ -91,17 +91,33 @@ export function Price({ price, mrp, large = false }) {
 }
 
 const STATUS_CLASS = {
+  // Orders
   Pending: 'badge-warning',
   Confirmed: 'badge-info',
   Shipped: 'badge-info',
+  'Out for Delivery': 'badge-info',
   Delivered: 'badge-success',
   Cancelled: 'badge-danger',
+  Returned: 'badge-info',
+  // Order payments
   Paid: 'badge-success',
   Refunded: 'badge-info',
+  // Payment attempts
+  Created: 'badge-warning',
+  'Awaiting OTP': 'badge-warning',
+  'Awaiting approval': 'badge-warning',
+  Succeeded: 'badge-success',
+  Failed: 'badge-danger',
+  Expired: 'badge-danger',
+  // Returns
+  Requested: 'badge-warning',
+  Approved: 'badge-success',
+  Rejected: 'badge-danger',
 };
 
-export function StatusBadge({ status }) {
-  return <span className={`badge ${STATUS_CLASS[status] ?? ''}`}>{status}</span>;
+/** A coloured status. The label can differ from the status, such as "Ready for pickup". */
+export function StatusBadge({ status, label }) {
+  return <span className={`badge ${STATUS_CLASS[status] ?? ''}`}>{label ?? status}</span>;
 }
 
 export function Stepper({ value, min = 1, max = 99, onChange, disabled, label = 'Quantity' }) {

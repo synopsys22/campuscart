@@ -160,7 +160,13 @@ Every cart route returns the full cart view, with live prices and totals:
   "couponError": null,
   "pricing": {
     "subtotal": 1298, "discount": 129, "shippingFee": 0, "total": 1169,
-    "itemCount": 2, "savings": 629, "freeShippingThreshold": 999, "amountToFreeShipping": 0
+    "itemCount": 2, "savings": 629, "deliveryMethod": "standard",
+    "deliveryOptions": [
+      { "id": "standard", "label": "Standard delivery", "fee": 0 },
+      { "id": "express", "label": "Express delivery", "fee": 99 },
+      { "id": "pickup", "label": "Campus pickup", "fee": 0 }
+    ],
+    "freeShippingThreshold": 999, "amountToFreeShipping": 0
   },
   "canCheckout": true
 }
@@ -176,7 +182,7 @@ Every cart route returns the full cart view, with live prices and totals:
 | POST | `/cart/coupon` | User | `code` |
 | DELETE | `/cart/coupon` | User | None |
 
-Shipping is free from ₹999, and ₹49 below that.
+Standard delivery is free from ₹999, and ₹49 below that. Express delivery is always ₹99, and campus pickup is free.
 
 ## Wishlist
 
@@ -190,14 +196,52 @@ Shipping is free from ₹999, and ₹49 below that.
 
 | Method | Path | Access | Body or query |
 |---|---|---|---|
-| POST | `/orders` | User | `address` and `paymentMethod`: `COD`, `MOCK_UPI` or `MOCK_CARD`. Uses the current cart |
+| POST | `/orders` | User | `delivery`, `address`, `paymentMethod` and, for card or UPI, `paymentId`. Uses the current cart. See below |
 | GET | `/orders/my` | User | Query: `status`, `page`, `limit` |
-| GET | `/orders/:id` | Owner or admin | None |
+| GET | `/orders/:id` | Owner or admin | None. Only the owner sees `delivery.code`. Includes `returnWindowEndsAt` |
 | POST | `/orders/:id/cancel` | Owner or admin | Optional `reason`. Only while Pending or Confirmed |
-| GET | `/orders` | Admin | Query: `status`, `search` (order number or customer), `from`, `to`, `page`, `limit` |
-| PATCH | `/orders/:id/status` | Admin | `status`, optional `note` |
+| POST | `/orders/:id/return` | Owner | `reason` (one of the return reasons), optional `comment`. Within 7 days of delivery |
+| GET | `/orders` | Admin | Query: `status`, `returnStatus`, `search` (order number, tracking number or customer), `from`, `to`, `page`, `limit` |
+| PATCH | `/orders/:id/status` | Admin | `status`, optional `note`. Moving to Delivered needs `code`, the customer's 4-digit delivery code |
+| PATCH | `/orders/:id/return` | Admin | `decision`: `approve` or `reject`. A rejection needs a `note` |
 
-**Status flow:** `Pending → Confirmed → Shipped → Delivered`. An order moves one step at a time. `Cancelled` is possible from Pending or Confirmed, and it restores stock and coupon use.
+**Placing an order:** `delivery` is `{ "method": "standard" | "express" | "pickup" }`. Pickup also needs `pickupPoint` and `pickupSlot` ids from `/delivery/options`, and takes no `address`. `paymentMethod` is `COD`, `WALLET`, `MOCK_CARD` or `MOCK_UPI`. Card and UPI orders need the `paymentId` of a payment that has gone through the gateway, for the same amount. If the order then fails, for example because an item sold out, the payment is refunded automatically and the error says so.
+
+**Status flow:** `Pending → Confirmed → Shipped → Out for Delivery → Delivered`. An order moves one step at a time. Shipping gives it a courier and a tracking number. Out for Delivery gives it a 4-digit delivery code that only the customer can read, and the admin must enter it to mark the order delivered. `Cancelled` is possible from Pending or Confirmed, and it restores stock and coupon use. An approved return moves a delivered order to `Returned`, restocks it and refunds it.
+
+**Refunds:** card and UPI money goes back to the card or UPI account. Wallet payments, and cash paid on delivery, are refunded to the CampusCart wallet.
+
+## Delivery and tracking
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| GET | `/delivery/options` | Public | Delivery methods, fees, campus pickup points and time slots, and return reasons |
+| GET | `/delivery/estimate?pincode=620015` | Public | Delivery dates for a pincode, or `serviceable: false`. Dates count working days from the Chennai warehouse and skip Sundays |
+| GET | `/track/:trackingNumber` | Public | The parcel's status and journey. No names, addresses or delivery code |
+
+## Payments (demo gateway)
+
+No real money moves, and only the listed test cards are accepted. The full card number, expiry and CVV are never stored.
+
+| Method | Path | Access | Body |
+|---|---|---|---|
+| GET | `/payments/test-details` | Public | The test cards, the demo OTP and the test UPI IDs |
+| POST | `/payments` | User | `purpose: "order"`, `method` (`MOCK_CARD` or `MOCK_UPI`) and `deliveryMethod`; or `purpose: "wallet_topup"`, `method` and `amount` (₹100 to ₹10,000). The amount for an order comes from the cart. A UPI payment returns an `approvalToken` once |
+| GET | `/payments/:id` | Owner | The payment's current state. Payments time out after 10 minutes |
+| POST | `/payments/:id/card` | Owner | `number`, `name`, `expiry` (MM/YY), `cvv`. A declining test card fails here |
+| POST | `/payments/:id/otp` | Owner | `otp`. The demo OTP is `123456`. Three wrong tries fail the payment |
+| POST | `/payments/:id/upi` | Owner | `upiId`. The simulated UPI app answers a few seconds later. `failure@...` is declined |
+| POST | `/payments/:id/cancel` | Owner | None. Records a closed payment screen as a failed attempt |
+| GET | `/payments/:id/approval?token=` | Public | What the phone that scanned the QR code shows |
+| POST | `/payments/:id/approve` | Public | `token`. Approves a UPI payment from the scanned QR code |
+
+**Payment statuses:** `Created`, `Awaiting OTP`, `Awaiting approval`, then `Succeeded`, `Failed`, `Expired` or `Refunded`.
+
+## Wallet
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| GET | `/wallet` | User | The statement, newest first, with `summary.balance` and the top-up limits. Money is added through `POST /payments` with `purpose: "wallet_topup"` |
 
 ## Reviews
 
@@ -252,6 +296,13 @@ Slots: `laptop`, `mouse`, `keyboard`, `monitor`, `headset`, `storage`, `bag`.
 | GET | `/users` | Query: `search`, `role`, `page`, `limit` |
 | GET | `/users/:id` | Profile, order count and last 5 orders |
 | PATCH | `/users/:id` | Body: `role`, `isActive`. Admins can't demote or deactivate themselves |
+
+## Payments and wallets (admin)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/admin/payments` | Every payment attempt. Query: `status`, `method`, `purpose`, `search`, `page`, `limit`. `summary` has collected, refunded, net, failed and success rate |
+| GET | `/admin/wallet-transactions` | Every wallet credit and debit. Query: `type` (`credit` or `debit`), `search`, `page`, `limit`. `summary` has the money held in wallets |
 
 ## Analytics (admin)
 

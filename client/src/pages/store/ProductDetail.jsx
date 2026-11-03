@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BadgeCheck, CalendarX, Check, MessageSquare, ShieldCheck, Truck } from 'lucide-react';
+import { BadgeCheck, CalendarX, Check, MessageSquare, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link, useParams } from 'react-router-dom';
 import { productApi, reviewApi } from '../../api/index.js';
+import { PincodeCheck } from '../../components/delivery.jsx';
 import { Enter, GrowBar, Reveal } from '../../components/motion.jsx';
 import {
   CartIcon,
@@ -29,7 +30,7 @@ import {
 } from '../../components/ui.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useAddToCart, usePageTitle } from '../../hooks/shop.js';
-import { deliveryNote, formatDate } from '../../utils/format.js';
+import { formatDate } from '../../utils/format.js';
 import { NotFound } from '../NotFound.jsx';
 
 function SpecsTable({ specs }) {
@@ -331,14 +332,11 @@ function ProductPage({ slug }) {
               <WishlistButton product={product} withLabel />
               <CompareButton product={product} withLabel />
             </div>
+            <PincodeCheck price={product.price} />
             <ul className="buy-facts small">
               <li>
-                <Truck size={16} aria-hidden="true" />
-                <span>{deliveryNote(product.price)} Arrives in about 5 days.</span>
-              </li>
-              <li>
                 <CalendarX size={16} aria-hidden="true" />
-                <span>Cancel any time before it ships.</span>
+                <span>Cancel any time before it ships. Return within 7 days of delivery.</span>
               </li>
             </ul>
           </Enter>

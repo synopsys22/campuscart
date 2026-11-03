@@ -1,4 +1,15 @@
-import { addFromProductPage, checkOut, expect, logInAs, logOut, registerNewStudent, stockOf, test } from './support.js';
+import {
+  addFromProductPage,
+  checkOut,
+  deliveryCodeFor,
+  expect,
+  logInAs,
+  logOut,
+  registerNewStudent,
+  stockOf,
+  test,
+  tokenOf,
+} from './support.js';
 
 test('a new student searches, filters, uses a coupon and places an order', async ({ page, request }) => {
   await registerNewStudent(page);
@@ -47,7 +58,7 @@ test('a new student searches, filters, uses a coupon and places an order', async
   await expect(page.getByText('Paid').first()).toBeVisible();
 });
 
-test('an order moves through admin updates to a verified review', async ({ page }) => {
+test('an order moves through admin updates to a verified review', async ({ page, request }) => {
   await registerNewStudent(page);
   await addFromProductPage(page, 'gel-pen-set-10-pack');
   const orderNumber = await checkOut(page);
@@ -56,17 +67,27 @@ test('an order moves through admin updates to a verified review', async ({ page 
   await page.goto('/products/gel-pen-set-10-pack');
   await expect(page.getByText('You can review this after your order is delivered.')).toBeVisible();
 
-  const studentToken = await page.evaluate(() => localStorage.getItem('campuscart-token'));
+  const studentToken = await tokenOf(page);
   await logOut(page);
 
   await logInAs(page, 'Admin');
   await page.goto('/admin/orders');
   await page.getByLabel('Search orders').fill(orderNumber);
   await page.getByRole('link', { name: orderNumber }).click();
-  for (const status of ['Confirmed', 'Shipped', 'Delivered']) {
+  for (const status of ['Confirmed', 'Shipped', 'Out for Delivery']) {
     await page.getByRole('button', { name: `Mark as ${status}` }).click();
     await expect(page.getByText(`Marked as ${status}`)).toBeVisible();
   }
+  // Shipping gave it a tracking number, and delivery needs the code only the student can see.
+  await expect(page.getByText(/^CCT\d{10}$/)).toBeVisible();
+  await page.getByRole('button', { name: 'Mark as Delivered' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Confirm delivery' });
+  await dialog.getByLabel('Delivery code').fill('0000');
+  await dialog.getByRole('button', { name: 'Confirm delivery' }).click();
+  await expect(dialog.getByText("That delivery code doesn't match.", { exact: false })).toBeVisible();
+  await dialog.getByLabel('Delivery code').fill(await deliveryCodeFor(request, studentToken, orderNumber));
+  await dialog.getByRole('button', { name: 'Confirm delivery' }).click();
+  await expect(page.getByText('Marked as Delivered')).toBeVisible();
   await expect(page.getByRole('button', { name: /Mark as/ })).toHaveCount(0);
   await logOut(page);
 
@@ -74,7 +95,7 @@ test('an order moves through admin updates to a verified review', async ({ page 
   await page.evaluate((token) => localStorage.setItem('campuscart-token', token), studentToken);
   await page.goto('/account/orders');
   await page.getByRole('link', { name: new RegExp(orderNumber) }).click();
-  await expect(page.locator('.timeline .timeline-done')).toHaveCount(4);
+  await expect(page.locator('.timeline .timeline-done')).toHaveCount(5);
 
   await page.getByRole('link', { name: 'Review this product' }).click();
   await expect(page.getByRole('heading', { name: 'Write a review' })).toBeVisible();
@@ -105,7 +126,8 @@ test('cancelling an order gives the stock back', async ({ page, request }) => {
 
   await expect(page.getByText(`Cancelled ${orderNumber}`)).toBeVisible();
   await expect(page.getByText('Ordered by mistake').first()).toBeVisible();
-  await expect(page.getByText('Refunded')).toBeVisible();
+  await expect(page.getByText('Refunded', { exact: true })).toBeVisible();
+  await expect(page.getByText(/refunded to Visa ending 1111/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Cancel order' })).toHaveCount(0);
   expect(await stockOf(request, 'null-pointer-coffee-mug')).toBe(before);
 });

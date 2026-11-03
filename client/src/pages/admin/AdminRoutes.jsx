@@ -1,5 +1,6 @@
 import {
   Boxes,
+  CreditCard,
   LayoutDashboard,
   MessageSquare,
   Package,
@@ -16,13 +17,15 @@ import { Enter } from '../../components/motion.jsx';
 import { NotFound } from '../NotFound.jsx';
 import Dashboard from './Dashboard.jsx';
 import { AdminOrderDetail, AdminOrders } from './Orders.jsx';
+import { AdminPayments } from './Payments.jsx';
 import { AdminReviews, AdminUsers } from './People.jsx';
 import { AdminCategories, AdminInventory, AdminProducts } from './Products.jsx';
 import { AdminCoupons, AdminKits } from './Promotions.jsx';
 
 const LINKS = [
   { to: '/admin', label: 'Dashboard', end: true, icon: LayoutDashboard, hint: 'Sales and stock across the whole store.' },
-  { to: '/admin/orders', label: 'Orders', icon: ReceiptText, hint: "Every customer's orders. Move each one forward, or cancel it before it ships." },
+  { to: '/admin/orders', label: 'Orders', icon: ReceiptText, hint: "Every customer's orders. Move each one forward, cancel it before it ships, or decide on a return." },
+  { to: '/admin/payments', label: 'Payments', icon: CreditCard, hint: 'Every payment attempt, including failures and refunds, and all wallet activity.' },
   { to: '/admin/products', label: 'Products', icon: Package, hint: 'Add, edit and hide what the store sells.' },
   { to: '/admin/inventory', label: 'Inventory', icon: Boxes, hint: 'Update stock levels and act on low-stock alerts.' },
   { to: '/admin/categories', label: 'Categories', icon: Tags, hint: 'Add and edit the categories products sit in.' },
@@ -66,6 +69,7 @@ export default function AdminRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="orders/:id" element={<AdminOrderDetail />} />
+        <Route path="payments" element={<AdminPayments />} />
         <Route path="products" element={<AdminProducts />} />
         <Route path="inventory" element={<AdminInventory />} />
         <Route path="categories" element={<AdminCategories />} />

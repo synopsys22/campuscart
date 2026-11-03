@@ -32,7 +32,7 @@ The login page has one-click buttons for these.
 |---|---|
 | `npm start` | Builds the app if needed, then runs it at port 5000. **Use this for the demo** |
 | `npm run dev` | Development mode with live reload, at <http://localhost:5173> |
-| `npm run db:reset` | Restores the demo data |
+| `npm run db:reset` | Restores the demo data. Add `-- --force` to reset a cloud database such as Atlas |
 | `npm test` | Runs the API tests |
 | `npm run test:e2e` | Runs the browser and accessibility tests |
 
@@ -45,8 +45,12 @@ The login page has one-click buttons for these.
 - Filters for category, brand, price, rating, stock and semester, with sorting and pagination
 - Product pages with grouped specifications and verified-purchase reviews
 - Cart with live stock checks and coupons
-- Three-step checkout, with Cash on Delivery and simulated UPI and card payments
-- Order tracking on a timeline, and cancellation before shipping
+- Three-step checkout with standard delivery, ₹99 express delivery, or free campus pickup at a chosen point and time
+- Delivery dates for any pincode on product pages and at checkout
+- A practice payment gateway: card details and a bank OTP with test cards, UPI by ID or by scanning a QR code with a phone, and clear failures, retries and timeouts
+- A CampusCart wallet: add money, pay in one tap, and get refunds back
+- Order tracking with a courier and tracking number, a public tracking page anyone can open, and a 4-digit delivery code the courier needs
+- Cancellation before shipping, and returns within 7 days of delivery, with automatic refunds
 - Wishlist
 - Dark and light themes, with subtle animation that respects reduced-motion settings
 
@@ -62,7 +66,9 @@ The login page has one-click buttons for these.
 
 - Dashboard with revenue, category sales, order status, top products and low-stock alerts
 - Full management of products (with image upload), categories, kits and coupons
-- Inventory editing, and order processing through `Pending → Confirmed → Shipped → Delivered`
+- Inventory editing, and order processing through `Pending → Confirmed → Shipped → Out for Delivery → Delivered`, confirmed with the customer's delivery code
+- Return requests to approve or reject, with stock and refunds handled automatically
+- A payments page with every attempt, including failures and refunds, and all wallet activity
 - User management and review moderation
 
 ## Screenshots
@@ -127,7 +133,7 @@ An empty database fills itself with demo data. While the app runs, you can brows
 
 ## Scope
 
-This is an academic project. Payments are simulated and never ask for real details, and product data and prices are illustrative. Production hardening such as rate limiting and email verification is out of scope.
+This is an academic project. Payments go through a practice gateway that accepts only published test cards, so no real money or card details are ever involved, and product data and prices are illustrative. Production hardening such as rate limiting and email verification is out of scope.
 
 ## Troubleshooting
 
@@ -135,4 +141,4 @@ This is an academic project. Payments are simulated and never ask for real detai
 |---|---|
 | Port 5000 is in use | Close the other program, or set `PORT=5001` in a `.env` file |
 | `npm install` fails with file-lock errors | The folder is in OneDrive. Pause OneDrive sync and try again |
-| Demo data looks messy | Stop the app, then run `npm run db:reset` |
+| Demo data looks messy | Stop the app, then run `npm run db:reset`, adding `-- --force` for Atlas |

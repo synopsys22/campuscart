@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, ClipboardCheck, IndianRupee, PackageX, ReceiptText, ShoppingBag, Users } from 'lucide-react';
+import { ChevronRight, ClipboardCheck, IndianRupee, PackageX, ReceiptText, RotateCcw, ShoppingBag, Users } from 'lucide-react';
 import { useReducedMotion } from 'motion/react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -30,8 +30,10 @@ const STATUS_COLORS = {
   Pending: 'var(--warning)',
   Confirmed: 'var(--info)',
   Shipped: 'var(--info)',
+  'Out for Delivery': 'var(--info)',
   Delivered: 'var(--success)',
   Cancelled: 'var(--danger)',
+  Returned: 'var(--muted)',
 };
 
 const shortDate = (date) =>
@@ -255,6 +257,7 @@ export default function Dashboard() {
             <h2 id="attention-heading">Needs attention</h2>
             <div className="attention-grid">
               <AttentionCard to="/admin/orders?status=Pending" icon={ClipboardCheck} count={s.pendingOrders} label="Orders to confirm" />
+              <AttentionCard to="/admin/orders?return=Requested" icon={RotateCcw} count={s.returnRequests} label="Returns to review" />
               <AttentionCard to="/admin/inventory?lowStock=true" icon={PackageX} count={s.lowStockCount} label="Low on stock" />
             </div>
           </section>

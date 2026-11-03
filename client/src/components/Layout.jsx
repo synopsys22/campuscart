@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   Sun,
   User,
+  Wallet,
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
@@ -144,6 +145,9 @@ function AccountMenu() {
             </Link>
             <Link to="/account/orders">
               <Package size={16} aria-hidden="true" /> My orders
+            </Link>
+            <Link to="/account/wallet">
+              <Wallet size={16} aria-hidden="true" /> Wallet
             </Link>
             <Link to="/wishlist">
               <Heart size={16} aria-hidden="true" /> Wishlist
@@ -355,11 +359,13 @@ export function Footer() {
           <Link to="/kits">Project Kits</Link>
           <Link to="/setup-builder">Build Your Setup</Link>
           <Link to="/compare">Compare</Link>
+          <Link to="/track">Track a parcel</Link>
         </nav>
         <nav aria-label="Account links" className="footer-links">
           <h2 className="small">Account</h2>
           <Link to="/account">Profile</Link>
           <Link to="/account/orders">Orders</Link>
+          <Link to="/account/wallet">Wallet</Link>
           <Link to="/wishlist">Wishlist</Link>
           <Link to="/cart">Cart</Link>
         </nav>

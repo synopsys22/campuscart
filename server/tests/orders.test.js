@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { Cart, Coupon, Product } from '../src/models/index.js';
+import { Cart, Coupon, Payment, Product } from '../src/models/index.js';
 import {
   advanceOrderTo,
   api,
+  deliveryCodeOf,
   makeAdmin,
   makeCoupon,
   makeProduct,
   makeUser,
   placeOrder,
+  placePaidOrder,
   shippingAddress,
   useDatabase,
 } from './support/helpers.js';
@@ -79,12 +81,21 @@ describe('placing an order', () => {
     expect(res.status).toBe(400);
   });
 
-  it('records a paid mock payment with a transaction reference', async () => {
+  it('records a paid card payment with a transaction reference and the card it used', async () => {
     const { bearer } = await makeUser();
-    const res = await placeOrder(bearer, [{ product: await makeProduct() }], { paymentMethod: 'MOCK_UPI' });
-    expect(res.body.data.payment.method).toBe('MOCK_UPI');
+    const res = await placePaidOrder(bearer, [{ product: await makeProduct() }]);
+    expect(res.status).toBe(201);
+    expect(res.body.data.payment.method).toBe('MOCK_CARD');
     expect(res.body.data.payment.status).toBe('Paid');
     expect(res.body.data.payment.transactionRef).toMatch(/^MOCK-/);
+    expect(res.body.data.payment.detail).toBe('Visa ending 1111');
+  });
+
+  it('refuses a card or UPI order without a completed payment', async () => {
+    const { bearer } = await makeUser();
+    const res = await placeOrder(bearer, [{ product: await makeProduct() }], { paymentMethod: 'MOCK_UPI' });
+    expect(res.status).toBe(400);
+    expect(res.body.errors.paymentId).toMatch(/complete the payment/i);
   });
 
   it('leaves Cash on Delivery unpaid with no reference', async () => {
@@ -239,8 +250,58 @@ describe('order status flow', () => {
       'Pending',
       'Confirmed',
       'Shipped',
+      'Out for Delivery',
       'Delivered',
     ]);
+  });
+
+  it('gives a shipped order a courier and tracking number, and an out-for-delivery order a code', async () => {
+    const { bearer: admin } = await makeAdmin();
+    const { bearer } = await makeUser();
+    const { body } = await placeOrder(bearer, [{ product: await makeProduct() }]);
+    await advanceOrderTo(admin, body.data._id, 'Shipped');
+    const shipped = await api().get(`/api/orders/${body.data._id}`).set('Authorization', bearer);
+    expect(shipped.body.data.delivery.trackingNumber).toMatch(/^CCT\d{10}$/);
+    expect(shipped.body.data.delivery.courier).toBe('CampusCart Logistics');
+    expect(shipped.body.data.statusHistory.at(-1).note).toBe('Handed to CampusCart Logistics');
+    expect(shipped.body.data.delivery.code).toBeNull();
+
+    await advanceOrderTo(admin, body.data._id, 'Out for Delivery');
+    const mine = await api().get(`/api/orders/${body.data._id}`).set('Authorization', bearer);
+    expect(mine.body.data.delivery.code).toMatch(/^\d{4}$/);
+    expect(mine.body.data.statusHistory.at(-1).note).toBe('Out for delivery in Chennai');
+  });
+
+  it('hides the delivery code from the admin and needs it to mark the order delivered', async () => {
+    const { bearer: admin } = await makeAdmin();
+    const { bearer } = await makeUser();
+    const { body } = await placeOrder(bearer, [{ product: await makeProduct() }]);
+    await advanceOrderTo(admin, body.data._id, 'Out for Delivery');
+
+    const asAdmin = await api().get(`/api/orders/${body.data._id}`).set('Authorization', admin);
+    expect(asAdmin.body.data.delivery.code).toBeUndefined();
+    const listed = await api().get('/api/orders').set('Authorization', admin);
+    expect(listed.body.data[0].delivery.code).toBeUndefined();
+
+    const code = await deliveryCodeOf(body.data._id);
+    const wrong = code === '1111' ? '2222' : '1111';
+    const noCode = await setStatus(admin, body.data._id, 'Delivered');
+    expect(noCode.status).toBe(400);
+    expect(noCode.body.message).toMatch(/delivery code/i);
+    const badCode = await api()
+      .patch(`/api/orders/${body.data._id}/status`)
+      .set('Authorization', admin)
+      .send({ status: 'Delivered', code: wrong });
+    expect(badCode.status).toBe(400);
+    expect(badCode.body.message).toMatch(/doesn't match/);
+
+    const good = await api()
+      .patch(`/api/orders/${body.data._id}/status`)
+      .set('Authorization', admin)
+      .send({ status: 'Delivered', code });
+    expect(good.status).toBe(200);
+    expect(good.body.data.status).toBe('Delivered');
+    expect(await deliveryCodeOf(body.data._id)).toBeNull();
   });
 
   it('rejects skipping a step or moving backwards', async () => {
@@ -252,13 +313,16 @@ describe('order status flow', () => {
     expect((await setStatus(admin, body.data._id, 'Pending')).status).toBe(400);
   });
 
-  it('marks Cash on Delivery as paid on delivery', async () => {
+  it('marks Cash on Delivery as paid on delivery and records the cash as a payment', async () => {
     const { bearer: admin } = await makeAdmin();
     const { bearer } = await makeUser();
     const { body } = await placeOrder(bearer, [{ product: await makeProduct() }]);
     await advanceOrderTo(admin, body.data._id, 'Delivered');
     const order = await api().get(`/api/orders/${body.data._id}`).set('Authorization', bearer);
     expect(order.body.data.payment.status).toBe('Paid');
+    expect(order.body.data.payment.transactionRef).toMatch(/^COD-/);
+    const record = await Payment.findOne({ order: body.data._id });
+    expect(record).toMatchObject({ method: 'COD', status: 'Succeeded', amount: body.data.total });
   });
 
   it('blocks students from changing status', async () => {
@@ -297,11 +361,14 @@ describe('cancelling an order', () => {
     expect((await Coupon.findById(coupon._id)).usedCount).toBe(0);
   });
 
-  it('marks a paid mock payment as refunded', async () => {
+  it('refunds a card payment back to the card', async () => {
     const { bearer } = await makeUser();
-    const { body } = await placeOrder(bearer, [{ product: await makeProduct() }], { paymentMethod: 'MOCK_CARD' });
+    const { body } = await placePaidOrder(bearer, [{ product: await makeProduct() }]);
     const res = await cancel(bearer, body.data._id);
-    expect(res.body.data.payment.status).toBe('Refunded');
+    expect(res.body.data.payment).toMatchObject({ status: 'Refunded', refundedTo: 'source' });
+    const record = await Payment.findById(body.data.payment.record);
+    expect(record.status).toBe('Refunded');
+    expect(record.refund).toMatchObject({ amount: body.data.total, to: 'source' });
   });
 
   it('lets a student cancel while Confirmed but not once Shipped', async () => {

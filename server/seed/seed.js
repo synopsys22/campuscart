@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import {
   Cart,
   Category,
@@ -5,12 +6,21 @@ import {
   Coupon,
   Kit,
   Order,
+  Payment,
   Product,
   Review,
   Setup,
   User,
+  WalletTransaction,
 } from '../src/models/index.js';
 import { hashPassword } from '../src/services/auth.service.js';
+import {
+  addWorkingDays,
+  courierFor,
+  estimateForPincode,
+  PICKUP_POINTS,
+  PICKUP_SLOTS,
+} from '../src/services/delivery.service.js';
 import { nextOrderNumber } from '../src/services/order.service.js';
 import { calculateTotals } from '../src/services/pricing.service.js';
 import { refreshProductRating } from '../src/services/review.service.js';
@@ -20,10 +30,43 @@ import { DEMO_ADMIN, DEMO_STUDENT, OTHER_STUDENTS } from './data/people.js';
 import { reviewTextByCategory } from './data/reviewText.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
 const OTHER_ORDER_COUNT = 72;
 const HISTORY_DAYS = 90;
-const PAYMENT_METHODS = ['COD', 'MOCK_UPI', 'MOCK_CARD'];
-const ALL_MODELS = [Review, Order, Cart, Setup, Kit, Coupon, Product, Category, User, Counter];
+const GATEWAY = ['MOCK_UPI', 'MOCK_CARD'];
+const ALL_MODELS = [Review, Payment, WalletTransaction, Order, Cart, Setup, Kit, Coupon, Product, Category, User, Counter];
+
+// Where each step happens, as a share of the time between ordering and the expected date.
+const STEP_SHARE = { Confirmed: 0.1, Shipped: 0.4, 'Out for Delivery': 0.85, Delivered: 0.95 };
+const FLOW = ['Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'];
+
+const TEST_CARDS = [
+  { brand: 'Visa', last4: '1111' },
+  { brand: 'Mastercard', last4: '4444' },
+  { brand: 'RuPay', last4: '0006' },
+];
+
+const RETURN_STORIES = [
+  ['Damaged or not working', 'Stopped working after two days.'],
+  ['Damaged or not working', 'Arrived with a cracked corner.'],
+  ['Wrong item sent', 'I received a different model from the one I ordered.'],
+  ['Not as described', 'Much smaller than the photos suggest.'],
+  ['No longer needed', 'My project group already had one.'],
+];
+
+const FAILED_ATTEMPTS = {
+  MOCK_CARD: [
+    ['Failed', 'Declined by the bank'],
+    ['Failed', 'Not enough balance on the card'],
+    ['Failed', 'Wrong OTP entered 3 times'],
+    ['Expired', 'The payment screen timed out'],
+  ],
+  MOCK_UPI: [
+    ['Failed', 'Declined in the UPI app'],
+    ['Failed', 'Closed before paying'],
+    ['Expired', 'The payment screen timed out'],
+  ],
+};
 
 /** A small seeded random generator, so every reset gives the same demo data. */
 function createRandom(seed) {
@@ -38,51 +81,126 @@ function createRandom(seed) {
     next,
     pick: (list) => list[Math.floor(next() * list.length)],
     int: (min, max) => min + Math.floor(next() * (max - min + 1)),
+    hex: (length) => Array.from({ length }, () => Math.floor(next() * 16).toString(16)).join('').toUpperCase(),
   };
 }
 
 const daysAgo = (days) => new Date(Date.now() - days * DAY_MS);
 const addDays = (date, days) => new Date(date.getTime() + days * DAY_MS);
 
-function buildHistory(status, createdAt, userId, adminId, random) {
+/** The date an order is expected, using the same rules as a real checkout. */
+function expectedDate(createdAt, method, pincode) {
+  if (method === 'pickup') return addWorkingDays(createdAt, 1);
+  return estimateForPincode(pincode, createdAt)[method].date;
+}
+
+/** How far through its journey an order of this age is, where 1 is the expected date. */
+function journeyShare(createdAt, expected, now = Date.now()) {
+  return (now - createdAt.getTime()) / (expected.getTime() - createdAt.getTime());
+}
+
+function statusForShare(share) {
+  if (share < STEP_SHARE.Confirmed) return 'Pending';
+  if (share < STEP_SHARE.Shipped) return 'Confirmed';
+  if (share < STEP_SHARE['Out for Delivery']) return 'Shipped';
+  if (share < STEP_SHARE.Delivered) return 'Out for Delivery';
+  return 'Delivered';
+}
+
+/**
+ * Works out when to place a demo order so it is a set share of the way to its expected
+ * date. The date itself depends on when the order was placed, so this settles in a few rounds.
+ */
+function placedAtForShare(share, method, pincode) {
+  let createdAt = daysAgo(share * 3);
+  for (let round = 0; round < 6; round += 1) {
+    const span = expectedDate(createdAt, method, pincode).getTime() - createdAt.getTime();
+    createdAt = new Date(Date.now() - share * span);
+  }
+  return createdAt;
+}
+
+function stepNotes(delivery, city) {
+  const pickup = delivery.method === 'pickup';
+  return {
+    Confirmed: 'Confirmed and being packed',
+    Shipped: pickup ? `Sent to ${delivery.pickupPoint}` : `Handed to ${delivery.courier}`,
+    'Out for Delivery': pickup ? `Ready at ${delivery.pickupPoint}, ${delivery.pickupSlot}` : `Out for delivery in ${city}`,
+    Delivered: pickup ? 'Collected. Delivery code checked' : 'Delivered. Delivery code checked',
+  };
+}
+
+function buildHistory({ status, createdAt, expected, userId, adminId, delivery, city, random }) {
   const history = [{ status: 'Pending', at: createdAt, note: 'Order placed', by: userId }];
   if (status === 'Pending') return history;
 
   if (status === 'Cancelled') {
     history.push({
       status: 'Cancelled',
-      at: addDays(createdAt, 0.2),
+      at: new Date(createdAt.getTime() + 4 * HOUR_MS),
       note: random.pick(['Changed my mind', 'Ordered by mistake', 'Found it on campus']),
       by: userId,
     });
     return history;
   }
 
-  const steps = [
-    ['Confirmed', 0.3, 'Payment and stock checked'],
-    ['Shipped', 1.5, 'Handed to the courier'],
-    ['Delivered', 3.5, 'Delivered to the address'],
-  ];
-  for (const [step, offset, note] of steps) {
-    history.push({ status: step, at: addDays(createdAt, offset), note, by: adminId });
+  const span = expected.getTime() - createdAt.getTime();
+  const notes = stepNotes(delivery, city);
+  for (const step of FLOW) {
+    history.push({ status: step, at: new Date(createdAt.getTime() + STEP_SHARE[step] * span), note: notes[step], by: adminId });
     if (step === status) break;
   }
   return history;
 }
 
-function paymentFor(method, status, random) {
-  const reference =
-    method === 'COD' ? null : `MOCK-${Math.floor(random.next() * 0xffffffffff).toString(16).toUpperCase()}`;
-  if (status === 'Cancelled') {
-    return { method, status: method === 'COD' ? 'Cancelled' : 'Refunded', transactionRef: reference };
+/** The card or UPI account an order was paid with, as the gateway would have recorded it. */
+function instrumentFor(method, user, random) {
+  if (method === 'MOCK_CARD') return { card: random.pick(TEST_CARDS) };
+  if (method === 'MOCK_UPI') {
+    return random.next() < 0.3
+      ? { upiFlow: 'qr', upiId: null }
+      : { upiFlow: 'collect', upiId: `${user.email.split('@')[0].split('.')[0]}@okbank` };
   }
-  if (method === 'COD') {
-    return { method, status: status === 'Delivered' ? 'Paid' : 'Pending', transactionRef: null };
-  }
-  return { method, status: 'Paid', transactionRef: reference };
+  return {};
 }
 
-function buildOrder({ user, status, createdAt, lines, coupon = null, method, adminId, random }) {
+function detailFor(method, instrument, delivered) {
+  if (instrument.card) return `${instrument.card.brand} ending ${instrument.card.last4}`;
+  if (method === 'MOCK_UPI') return instrument.upiFlow === 'qr' ? 'UPI QR code' : instrument.upiId;
+  if (method === 'WALLET') return 'CampusCart wallet';
+  if (method === 'COD' && delivered) return 'Cash collected on delivery';
+  return '';
+}
+
+function paymentFor({ method, status, instrument, random }) {
+  const delivered = ['Delivered', 'Returned'].includes(status);
+  const prefix = { MOCK_CARD: 'MOCK', MOCK_UPI: 'MOCK', WALLET: 'WAL', COD: 'COD' }[method];
+  const paid = method !== 'COD' || delivered;
+  const payment = {
+    method,
+    status: paid ? 'Paid' : 'Pending',
+    transactionRef: paid ? `${prefix}-${random.hex(12)}` : null,
+    detail: detailFor(method, instrument, delivered),
+    record: paid ? new mongoose.Types.ObjectId() : null,
+    refundedTo: null,
+  };
+  if (status === 'Cancelled') {
+    payment.status = paid ? 'Refunded' : 'Cancelled';
+    payment.refundedTo = paid ? (GATEWAY.includes(method) ? 'source' : 'wallet') : null;
+  }
+  return payment;
+}
+
+function deliveryFor(method, random) {
+  const delivery = { method, courier: null, trackingNumber: null, code: null, pickupPoint: null, pickupSlot: null };
+  if (method === 'pickup') {
+    delivery.pickupPoint = random.pick(PICKUP_POINTS).name;
+    delivery.pickupSlot = random.pick(PICKUP_SLOTS).label;
+  }
+  return delivery;
+}
+
+function buildOrder({ user, status, createdAt, lines, coupon = null, method, deliveryMethod, adminId, random, trackingNumbers }) {
   const items = lines.map(({ product, qty }) => ({
     product: product._id,
     name: product.name,
@@ -94,14 +212,40 @@ function buildOrder({ user, status, createdAt, lines, coupon = null, method, adm
     qty,
     lineTotal: product.price * qty,
   }));
-  const totals = calculateTotals(items, coupon);
-  const history = buildHistory(status, createdAt, user._id, adminId, random);
+  const address = user.addresses[0].toObject();
+  const totals = calculateTotals(items, coupon, deliveryMethod);
+  const expected = expectedDate(createdAt, deliveryMethod, address.pincode);
+  const delivery = deliveryFor(deliveryMethod, random);
+
+  const shipped = ['Shipped', 'Out for Delivery', 'Delivered'].includes(status);
+  if (shipped) {
+    delivery.courier = courierFor(deliveryMethod);
+    let number;
+    do number = `CCT${random.int(1e9, 1e10 - 1)}`;
+    while (trackingNumbers.has(number));
+    trackingNumbers.add(number);
+    delivery.trackingNumber = number;
+  }
+  if (status === 'Out for Delivery') delivery.code = String(random.int(1000, 9999));
+
+  const history = buildHistory({
+    status,
+    createdAt,
+    expected,
+    userId: user._id,
+    adminId,
+    delivery,
+    city: address.city,
+    random,
+  });
+  const instrument = instrumentFor(method, user, random);
 
   return {
     user: user._id,
     items,
-    shippingAddress: user.addresses[0].toObject(),
-    payment: paymentFor(method, status, random),
+    delivery,
+    shippingAddress: deliveryMethod === 'pickup' ? null : address,
+    payment: paymentFor({ method, status, instrument, random }),
     subtotal: totals.subtotal,
     discount: totals.discount,
     couponCode: coupon?.code ?? null,
@@ -110,19 +254,74 @@ function buildOrder({ user, status, createdAt, lines, coupon = null, method, adm
     status,
     statusHistory: history,
     cancelReason: status === 'Cancelled' ? history.at(-1).note : null,
-    estimatedDelivery: addDays(createdAt, 5),
+    estimatedDelivery: expected,
+    returnRequest: null,
     createdAt,
     updatedAt: history.at(-1).at,
+    // Kept only while seeding, to write the matching payment record.
+    seedInstrument: instrument,
   };
 }
 
-/** Recent orders are still moving through the flow. Older ones are mostly delivered. */
-function statusForAge(ageDays, random) {
-  if (random.next() < 0.08) return 'Cancelled';
-  if (ageDays < 1) return 'Pending';
-  if (ageDays < 2) return 'Confirmed';
-  if (ageDays < 4) return 'Shipped';
-  return 'Delivered';
+const deliveredAtOf = (draft) => draft.statusHistory.find((event) => event.status === 'Delivered').at;
+
+/** Turns a delivered order into one the store took back and refunded. */
+function approveReturn(draft, { requestedAfter, resolvedAfter, adminId, random }) {
+  const deliveredAt = deliveredAtOf(draft);
+  const [reason, comment] = random.pick(RETURN_STORIES);
+  const resolvedAt = new Date(deliveredAt.getTime() + resolvedAfter * DAY_MS);
+  draft.status = 'Returned';
+  draft.returnRequest = {
+    status: 'Approved',
+    reason,
+    comment,
+    requestedAt: new Date(deliveredAt.getTime() + requestedAfter * DAY_MS),
+    resolvedAt,
+    resolvedBy: adminId,
+    resolutionNote: '',
+    refundAmount: draft.total,
+  };
+  draft.statusHistory.push({ status: 'Returned', at: resolvedAt, note: 'Return approved and refund issued', by: adminId });
+  draft.payment.status = 'Refunded';
+  draft.payment.refundedTo = GATEWAY.includes(draft.payment.method) ? 'source' : 'wallet';
+  draft.updatedAt = resolvedAt;
+}
+
+/** Some delivered orders from other students are returned, refused or waiting for a decision. */
+function addReturns(drafts, { adminId, random }) {
+  const now = Date.now();
+  const delivered = drafts.filter((draft) => draft.status === 'Delivered');
+  const age = (draft) => (now - deliveredAtOf(draft).getTime()) / DAY_MS;
+
+  // Waiting for the admin: delivered recently enough that the return window is still open.
+  const waiting = delivered.filter((draft) => age(draft) > 0.5 && age(draft) < 5).slice(0, 2);
+  for (const draft of waiting) {
+    const [reason, comment] = random.pick(RETURN_STORIES);
+    draft.returnRequest = {
+      status: 'Requested',
+      reason,
+      comment,
+      requestedAt: new Date(deliveredAtOf(draft).getTime() + 0.4 * DAY_MS),
+    };
+  }
+
+  const older = delivered.filter((draft) => age(draft) > 12 && !waiting.includes(draft));
+  for (const draft of older.slice(0, 4)) {
+    approveReturn(draft, { requestedAfter: 1, resolvedAfter: 2.5, adminId, random });
+  }
+  const refused = older[4];
+  if (refused) {
+    const deliveredAt = deliveredAtOf(refused);
+    refused.returnRequest = {
+      status: 'Rejected',
+      reason: 'No longer needed',
+      comment: 'Bought a different one.',
+      requestedAt: new Date(deliveredAt.getTime() + 6 * DAY_MS),
+      resolvedAt: new Date(deliveredAt.getTime() + 6.5 * DAY_MS),
+      resolvedBy: adminId,
+      resolutionNote: 'The box was opened and parts were missing, so this one cannot be taken back.',
+    };
+  }
 }
 
 async function seedCatalog() {
@@ -222,30 +421,59 @@ async function seedSetups(student, productByName) {
   ]);
 }
 
-/** The demo student has one order in each status, so every screen has something to show. */
-function demoStudentOrders({ student, admin, productByName, random }) {
-  const lines = (...names) => names.map((name) => ({ product: productByName(name), qty: 1 }));
-  const make = (status, ageDays, method, names) =>
+/**
+ * The demo student has an order in every status, including one returned and one
+ * delivered recently enough to return, so every screen has something to show.
+ */
+function demoStudentOrders({ student, admin, productByName, random, trackingNumbers }) {
+  const pincode = student.addresses[0].pincode;
+  const make = ({ status, placedAt, method, deliveryMethod = 'standard', names }) =>
     buildOrder({
       user: student,
       status,
-      createdAt: daysAgo(ageDays),
-      lines: lines(...names),
+      createdAt: placedAt,
+      lines: names.map((name) => ({ product: productByName(name), qty: 1 })),
       method,
+      deliveryMethod,
       adminId: admin._id,
       random,
+      trackingNumbers,
     });
+  // In-progress orders are placed a set share of the way to their expected date.
+  const inProgress = (share, deliveryMethod = 'standard') => placedAtForShare(share, deliveryMethod, pincode);
+
+  const returned = make({ status: 'Delivered', placedAt: daysAgo(25), method: 'MOCK_UPI', names: ['boAt Rockerz 450 Headphones'] });
+  approveReturn(returned, { requestedAfter: 1, resolvedAfter: 2, adminId: admin._id, random });
+
   return [
-    make('Delivered', 38, 'MOCK_UPI', ['Clean Code', 'Logitech M331 Silent Mouse']),
-    make('Delivered', 12, 'COD', ['Arduino Uno R3', 'Breadboard & Jumper Wire Set']),
-    make('Cancelled', 9, 'MOCK_CARD', ['HDMI 2.0 Cable (1.5 m)']),
-    make('Shipped', 2.5, 'MOCK_UPI', ['7-in-1 USB-C Hub']),
-    make('Confirmed', 1.5, 'COD', ['Operating System Concepts (Galvin)']),
-    make('Pending', 0.1, 'MOCK_UPI', ['Null Pointer Coffee Mug', 'Developer Laptop Sticker Pack (50)']),
+    make({ status: 'Delivered', placedAt: daysAgo(38), method: 'MOCK_UPI', names: ['Clean Code', 'Logitech M331 Silent Mouse'] }),
+    returned,
+    make({ status: 'Delivered', placedAt: daysAgo(12), method: 'COD', names: ['Arduino Uno R3', 'Breadboard & Jumper Wire Set'] }),
+    make({ status: 'Cancelled', placedAt: daysAgo(9), method: 'MOCK_CARD', names: ['HDMI 2.0 Cable (1.5 m)'] }),
+    make({ status: 'Delivered', placedAt: daysAgo(4.5), method: 'WALLET', deliveryMethod: 'express', names: ['Logitech K380 Wireless Keyboard'] }),
+    make({ status: 'Out for Delivery', placedAt: inProgress(0.9), method: 'COD', names: ['7-in-1 USB-C Hub'] }),
+    make({ status: 'Shipped', placedAt: inProgress(0.6), method: 'MOCK_CARD', names: ['Aluminium Laptop Stand'] }),
+    make({ status: 'Confirmed', placedAt: inProgress(0.25, 'pickup'), method: 'COD', deliveryMethod: 'pickup', names: ['Operating System Concepts (Galvin)'] }),
+    make({ status: 'Pending', placedAt: inProgress(0.05), method: 'MOCK_UPI', names: ['Null Pointer Coffee Mug', 'Developer Laptop Sticker Pack (50)'] }),
   ];
 }
 
-function otherStudentOrders({ others, admin, productDocs, couponDocs, random }) {
+function pickPaymentMethod(random) {
+  const roll = random.next();
+  if (roll < 0.32) return 'COD';
+  if (roll < 0.64) return 'MOCK_UPI';
+  if (roll < 0.88) return 'MOCK_CARD';
+  return 'WALLET';
+}
+
+function pickDeliveryMethod(random) {
+  const roll = random.next();
+  if (roll < 0.7) return 'standard';
+  if (roll < 0.85) return 'express';
+  return 'pickup';
+}
+
+function otherStudentOrders({ others, admin, productDocs, couponDocs, random, trackingNumbers }) {
   // Laptops and big-ticket items are bought rarely, which keeps the revenue chart believable.
   const everyday = productDocs.filter((product) => product.price < 15000);
   const expensive = productDocs.filter((product) => product.price >= 15000);
@@ -253,8 +481,8 @@ function otherStudentOrders({ others, admin, productDocs, couponDocs, random }) 
   const orders = [];
 
   for (let i = 0; i < OTHER_ORDER_COUNT; i += 1) {
-    // Squaring the random value places more orders in recent weeks, so sales trend upward.
-    const ageDays = random.next() ** 1.6 * (HISTORY_DAYS - 1);
+    // Raising the random value to a power places more orders in recent weeks, so sales trend upward.
+    const createdAt = daysAgo(random.next() ** 1.6 * (HISTORY_DAYS - 1));
     const user = random.pick(others);
     const chosen = new Map();
     for (let n = random.int(1, 3); n > 0; n -= 1) {
@@ -262,19 +490,30 @@ function otherStudentOrders({ others, admin, productDocs, couponDocs, random }) 
       const product = random.pick(pool);
       chosen.set(product.slug, { product, qty: product.price < 800 && random.next() < 0.3 ? 2 : 1 });
     }
+    const lines = [...chosen.values()];
+    const deliveryMethod = pickDeliveryMethod(random);
+    let method = pickPaymentMethod(random);
+    // Wallets are topped up ₹10,000 at a time at most, so large orders use UPI instead.
+    if (method === 'WALLET' && lines.reduce((sum, { product, qty }) => sum + product.price * qty, 0) > 9000) method = 'MOCK_UPI';
+
+    const expected = expectedDate(createdAt, deliveryMethod, user.addresses[0].pincode);
+    const status = random.next() < 0.08 ? 'Cancelled' : statusForShare(journeyShare(createdAt, expected));
     orders.push(
       buildOrder({
         user,
-        status: statusForAge(ageDays, random),
-        createdAt: daysAgo(ageDays),
-        lines: [...chosen.values()],
+        status,
+        createdAt,
+        lines,
         coupon: random.next() < 0.15 ? usableCoupons[0] : null,
-        method: random.pick(PAYMENT_METHODS),
+        method,
+        deliveryMethod,
         adminId: admin._id,
         random,
+        trackingNumbers,
       }),
     );
   }
+  addReturns(orders, { adminId: admin._id, random });
   return orders;
 }
 
@@ -282,7 +521,169 @@ function otherStudentOrders({ others, admin, productDocs, couponDocs, random }) 
 async function saveOrders(drafts) {
   const sorted = [...drafts].sort((a, b) => a.createdAt - b.createdAt);
   for (const draft of sorted) draft.orderNumber = await nextOrderNumber(draft.createdAt);
-  return Order.insertMany(sorted, { timestamps: false });
+  const instruments = sorted.map(({ seedInstrument }) => seedInstrument);
+  const orderDocs = await Order.insertMany(
+    sorted.map(({ seedInstrument, ...order }) => order),
+    { timestamps: false },
+  );
+  return orderDocs.map((order, index) => ({ order, instrument: instruments[index] }));
+}
+
+function refundTime(order) {
+  if (order.status === 'Cancelled') return order.statusHistory.at(-1).at;
+  return order.returnRequest?.resolvedAt ?? null;
+}
+
+/**
+ * Writes the payment record behind every paid order, a few failed attempts, and wallet
+ * statements whose balances add up: each wallet is topped up before it is spent.
+ */
+async function seedPaymentsAndWallets(saved, random) {
+  const payments = [];
+  const walletEvents = [];
+
+  for (const { order, instrument } of saved) {
+    const { payment } = order;
+    const isGateway = GATEWAY.includes(payment.method);
+
+    if (isGateway && random.next() < 0.18) {
+      const [status, failureReason] = random.pick(FAILED_ATTEMPTS[payment.method]);
+      const at = new Date(order.createdAt.getTime() - random.int(3, 20) * 60 * 1000);
+      payments.push({
+        reference: `MOCK-${random.hex(12)}`,
+        user: order.user,
+        purpose: 'order',
+        method: payment.method,
+        amount: order.total,
+        status,
+        deliveryMethod: order.delivery.method,
+        ...instrument,
+        failureReason,
+        expiresAt: new Date(at.getTime() + 10 * 60 * 1000),
+        completedAt: at,
+        createdAt: at,
+        updatedAt: at,
+      });
+    }
+
+    if (!payment.record) continue;
+    const isCash = payment.method === 'COD';
+    const paidAt = isCash ? order.statusHistory.find((event) => event.status === 'Delivered').at : order.createdAt;
+    const refundedAt = payment.status === 'Refunded' ? refundTime(order) : null;
+    payments.push({
+      _id: payment.record,
+      reference: payment.transactionRef,
+      user: order.user,
+      purpose: 'order',
+      method: payment.method,
+      amount: order.total,
+      status: refundedAt ? 'Refunded' : 'Succeeded',
+      deliveryMethod: order.delivery.method,
+      ...instrument,
+      order: order._id,
+      orderNumber: order.orderNumber,
+      expiresAt: paidAt,
+      completedAt: paidAt,
+      refund: refundedAt
+        ? {
+            amount: order.total,
+            at: refundedAt,
+            reason: order.status === 'Cancelled' ? `Order cancelled: ${order.cancelReason}` : `Returned: ${order.returnRequest.reason}`,
+            to: payment.refundedTo,
+          }
+        : null,
+      createdAt: paidAt,
+      updatedAt: refundedAt ?? paidAt,
+    });
+
+    if (payment.method === 'WALLET') {
+      walletEvents.push({ user: order.user, at: order.createdAt, kind: 'payment', amount: order.total, order });
+    }
+    if (refundedAt && payment.refundedTo === 'wallet') {
+      walletEvents.push({ user: order.user, at: refundedAt, kind: 'refund', amount: order.total, order });
+    }
+  }
+
+  // Replays each wallet in time order, topping it up whenever a payment needs more.
+  walletEvents.sort((a, b) => a.at - b.at);
+  const balances = new Map();
+  const lines = [];
+  for (const event of walletEvents) {
+    const key = event.user.toString();
+    let balance = balances.get(key) ?? 0;
+    if (event.kind === 'payment') {
+      let topupAt = new Date(event.at.getTime() - 3 * HOUR_MS);
+      while (balance < event.amount) {
+        const amount = Math.min(10000, Math.max(2000, Math.ceil((event.amount - balance) / 500) * 500));
+        const method = random.next() < 0.6 ? 'MOCK_UPI' : 'MOCK_CARD';
+        const _id = new mongoose.Types.ObjectId();
+        payments.push({
+          _id,
+          reference: `MOCK-${random.hex(12)}`,
+          user: event.user,
+          purpose: 'wallet_topup',
+          method,
+          amount,
+          status: 'Succeeded',
+          ...(method === 'MOCK_CARD' ? { card: random.pick(TEST_CARDS) } : { upiFlow: 'qr' }),
+          expiresAt: topupAt,
+          completedAt: topupAt,
+          createdAt: topupAt,
+          updatedAt: topupAt,
+        });
+        balance += amount;
+        lines.push({
+          user: event.user,
+          type: 'credit',
+          kind: 'topup',
+          amount,
+          balanceAfter: balance,
+          description: `Added money by ${method === 'MOCK_UPI' ? 'UPI' : 'card'}`,
+          payment: _id,
+          createdAt: topupAt,
+          updatedAt: topupAt,
+        });
+        topupAt = new Date(topupAt.getTime() + 60 * 1000);
+      }
+      balance -= event.amount;
+      lines.push({
+        user: event.user,
+        type: 'debit',
+        kind: 'payment',
+        amount: event.amount,
+        balanceAfter: balance,
+        description: `Paid for order ${event.order.orderNumber}`,
+        order: event.order._id,
+        orderNumber: event.order.orderNumber,
+        payment: event.order.payment.record,
+        createdAt: event.at,
+        updatedAt: event.at,
+      });
+    } else {
+      balance += event.amount;
+      lines.push({
+        user: event.user,
+        type: 'credit',
+        kind: 'refund',
+        amount: event.amount,
+        balanceAfter: balance,
+        description: `Refund for order ${event.order.orderNumber}`,
+        order: event.order._id,
+        orderNumber: event.order.orderNumber,
+        createdAt: event.at,
+        updatedAt: event.at,
+      });
+    }
+    balances.set(key, balance);
+  }
+
+  await Payment.insertMany(payments, { timestamps: false });
+  await WalletTransaction.insertMany(lines, { timestamps: false });
+  if (balances.size > 0) {
+    await User.bulkWrite(
+      [...balances].map(([id, walletBalance]) => ({ updateOne: { filter: { _id: id }, update: { $set: { walletBalance } } } })),
+    );
+  }
 }
 
 const RATINGS = [5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 2];
@@ -336,7 +737,8 @@ async function seedReviews({ orderDocs, student, productDocs, categoryDocs, rand
 async function setSoldCounts(orderDocs) {
   const units = new Map();
   for (const order of orderDocs) {
-    if (order.status === 'Cancelled') continue;
+    // Cancelled and returned items went back into stock.
+    if (['Cancelled', 'Returned'].includes(order.status)) continue;
     for (const item of order.items) {
       const key = item.product.toString();
       units.set(key, (units.get(key) ?? 0) + item.qty);
@@ -380,11 +782,14 @@ export async function seedDatabase() {
   await seedKits(productByName);
   await seedSetups(student, productByName);
 
-  const orderDocs = await saveOrders([
-    ...demoStudentOrders({ student, admin, productByName, random }),
-    ...otherStudentOrders({ others, admin, productDocs, couponDocs, random }),
+  const trackingNumbers = new Set();
+  const saved = await saveOrders([
+    ...demoStudentOrders({ student, admin, productByName, random, trackingNumbers }),
+    ...otherStudentOrders({ others, admin, productDocs, couponDocs, random, trackingNumbers }),
   ]);
+  const orderDocs = saved.map(({ order }) => order);
 
+  await seedPaymentsAndWallets(saved, random);
   await seedReviews({ orderDocs, student, productDocs, categoryDocs, random });
   await setSoldCounts(orderDocs);
   await setCouponUsage(orderDocs);

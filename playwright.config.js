@@ -19,11 +19,12 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    // A throwaway database, so tests never touch the saved demo data.
+    // A throwaway database, so tests never touch the saved demo data. The empty
+    // MONGODB_URI stops the project's .env from sending the tests to Atlas.
     command: 'node server/src/server.js',
     url: `http://localhost:${PORT}/api/health`,
     timeout: 120000,
     reuseExistingServer: false,
-    env: { PORT: String(PORT), DB_MODE: 'memory', NODE_ENV: 'production' },
+    env: { PORT: String(PORT), DB_MODE: 'memory', NODE_ENV: 'production', MONGODB_URI: '' },
   },
 });

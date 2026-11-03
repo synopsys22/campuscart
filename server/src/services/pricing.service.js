@@ -1,5 +1,4 @@
-export const FREE_SHIPPING_MIN = 999;
-export const SHIPPING_FEE = 49;
+import { deliveryFee, deliveryOptions, FREE_SHIPPING_MIN } from './delivery.service.js';
 
 /** The discount a coupon gives on a subtotal. Never more than the subtotal. */
 export function calculateDiscount(coupon, subtotal) {
@@ -12,16 +11,16 @@ export function calculateDiscount(coupon, subtotal) {
 }
 
 /**
- * The single place order totals are calculated, used by both the cart and checkout.
- * Lines are { price, mrp, qty }. Prices already include tax.
+ * The single place order totals are calculated, used by the cart, the payment screen and
+ * checkout. Lines are { price, mrp, qty }. Prices already include tax.
  */
-export function calculateTotals(lines, coupon = null) {
+export function calculateTotals(lines, coupon = null, deliveryMethod = 'standard') {
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
   const mrpTotal = lines.reduce((sum, line) => sum + (line.mrp ?? line.price) * line.qty, 0);
   const itemCount = lines.reduce((sum, line) => sum + line.qty, 0);
   const discount = calculateDiscount(coupon, subtotal);
-  const qualifiesForFreeShipping = subtotal === 0 || subtotal >= FREE_SHIPPING_MIN;
-  const shippingFee = qualifiesForFreeShipping ? 0 : SHIPPING_FEE;
+  const shippingFee = deliveryFee(deliveryMethod, subtotal);
+  const standardIsFree = deliveryFee('standard', subtotal) === 0;
 
   return {
     subtotal,
@@ -30,7 +29,9 @@ export function calculateTotals(lines, coupon = null) {
     total: subtotal - discount + shippingFee,
     itemCount,
     savings: mrpTotal - subtotal + discount,
+    deliveryMethod,
+    deliveryOptions: deliveryOptions(subtotal),
     freeShippingThreshold: FREE_SHIPPING_MIN,
-    amountToFreeShipping: qualifiesForFreeShipping ? 0 : FREE_SHIPPING_MIN - subtotal,
+    amountToFreeShipping: standardIsFree ? 0 : FREE_SHIPPING_MIN - subtotal,
   };
 }

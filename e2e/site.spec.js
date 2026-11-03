@@ -148,7 +148,7 @@ test('a student cannot open the admin area', async ({ page }) => {
 test('the demo student has an order in every status', async ({ page }) => {
   await logInAs(page, 'Student');
   await page.goto('/account/orders');
-  for (const status of ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled']) {
+  for (const status of ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned']) {
     await page.getByRole('button', { name: status, exact: true }).click();
     await expect(page.locator('.order-row').first()).toContainText(status);
   }

@@ -2,13 +2,14 @@ import { ORDER_STATUSES, Order, Product } from '../models/index.js';
 
 const TIME_ZONE = 'Asia/Kolkata';
 const DAY_MS = 24 * 60 * 60 * 1000;
-const LIVE_ORDERS = { status: { $ne: 'Cancelled' } };
+// Cancelled and returned orders were refunded, so they are not sales.
+const LIVE_ORDERS = { status: { $nin: ['Cancelled', 'Returned'] } };
 const LOW_STOCK = { isActive: true, $expr: { $lte: ['$stock', '$lowStockThreshold'] } };
 
 const dayKey = (date) => date.toLocaleDateString('en-CA', { timeZone: TIME_ZONE });
 
 export async function summary() {
-  const [[totals], customers, pendingOrders, lowStockCount] = await Promise.all([
+  const [[totals], customers, pendingOrders, lowStockCount, returnRequests] = await Promise.all([
     Order.aggregate([
       { $match: LIVE_ORDERS },
       { $group: { _id: null, revenue: { $sum: '$total' }, orders: { $sum: 1 } } },
@@ -16,6 +17,7 @@ export async function summary() {
     Order.distinct('user', LIVE_ORDERS),
     Order.countDocuments({ status: 'Pending' }),
     Product.countDocuments(LOW_STOCK),
+    Order.countDocuments({ 'returnRequest.status': 'Requested' }),
   ]);
   const revenue = totals?.revenue ?? 0;
   const orders = totals?.orders ?? 0;
@@ -26,6 +28,7 @@ export async function summary() {
     customers: customers.length,
     pendingOrders,
     lowStockCount,
+    returnRequests,
   };
 }
 

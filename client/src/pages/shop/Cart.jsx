@@ -9,7 +9,7 @@ import { EmptyState, ErrorState, PathCrumbs, SkeletonRows, Stepper } from '../..
 import { useCart, useCartMutation, usePageTitle } from '../../hooks/shop.js';
 import { couponSummary, formatINR } from '../../utils/format.js';
 
-export function OrderSummaryRows({ pricing }) {
+export function OrderSummaryRows({ pricing, deliveryLabel = 'Shipping' }) {
   const rowsRef = useSmoothList();
   return (
     <dl className="summary-rows" ref={rowsRef}>
@@ -24,7 +24,7 @@ export function OrderSummaryRows({ pricing }) {
         </div>
       )}
       <div>
-        <dt>Shipping</dt>
+        <dt>{deliveryLabel}</dt>
         <dd>{pricing.shippingFee === 0 ? 'Free' : formatINR(pricing.shippingFee)}</dd>
       </div>
       <div className="summary-total">

@@ -24,7 +24,7 @@ test('the dashboard shows real figures and charts', async ({ page }) => {
   await page.getByRole('button', { name: '7 days' }).click();
   await expect(page.getByText(/^In the last 7 days/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Low-stock alerts' })).toBeVisible();
-  await expect(page.locator('.status-bars li')).toHaveCount(5);
+  await expect(page.locator('.status-bars li')).toHaveCount(7);
 });
 
 test('an admin creates a product with an image, and it appears in the store', async ({ page }) => {

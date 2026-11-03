@@ -5,8 +5,10 @@ import * as authController from '../controllers/auth.controller.js';
 import * as cartController from '../controllers/cart.controller.js';
 import * as categoryController from '../controllers/category.controller.js';
 import * as couponController from '../controllers/coupon.controller.js';
+import * as deliveryController from '../controllers/delivery.controller.js';
 import * as kitController from '../controllers/kit.controller.js';
 import * as orderController from '../controllers/order.controller.js';
+import * as paymentController from '../controllers/payment.controller.js';
 import * as productController from '../controllers/product.controller.js';
 import * as reviewController from '../controllers/review.controller.js';
 import * as setupController from '../controllers/setup.controller.js';
@@ -19,6 +21,7 @@ import * as authV from '../validators/auth.validators.js';
 import * as catalogV from '../validators/catalog.validators.js';
 import { addressSchema, idParams } from '../validators/common.js';
 import * as extrasV from '../validators/extras.validators.js';
+import * as paymentV from '../validators/payment.validators.js';
 import * as shopV from '../validators/shop.validators.js';
 
 const router = Router();
@@ -110,7 +113,29 @@ router.get('/orders/my', auth, validate({ query: shopV.myOrdersQuery }), orderCo
 router.get('/orders', admin, validate({ query: shopV.listOrdersQuery }), orderController.listOrders);
 router.get('/orders/:id', auth, validate({ params: idParams }), orderController.getOrder);
 router.post('/orders/:id/cancel', auth, validate({ params: idParams, body: shopV.cancelOrderSchema }), orderController.cancelMyOrder);
+router.post('/orders/:id/return', auth, validate({ params: idParams, body: shopV.requestReturnSchema }), orderController.requestMyReturn);
 router.patch('/orders/:id/status', admin, validate({ params: idParams, body: shopV.updateOrderStatusSchema }), orderController.updateOrderStatus);
+router.patch('/orders/:id/return', admin, validate({ params: idParams, body: shopV.resolveReturnSchema }), orderController.decideReturn);
+
+// Delivery and public tracking
+router.get('/delivery/options', deliveryController.options);
+router.get('/delivery/estimate', validate({ query: shopV.deliveryEstimateQuery }), deliveryController.estimate);
+router.get('/track/:trackingNumber', validate({ params: shopV.trackingParams }), orderController.trackShipment);
+
+// The demo payment gateway. The approval routes are public: a phone that scanned the
+// UPI QR code proves itself with the token inside the code, not with a login.
+router.get('/payments/test-details', paymentController.testDetails);
+router.post('/payments', auth, validate({ body: paymentV.createPaymentSchema }), paymentController.create);
+router.get('/payments/:id', auth, validate({ params: idParams }), paymentController.show);
+router.post('/payments/:id/card', auth, validate({ params: idParams, body: paymentV.cardSchema }), paymentController.card);
+router.post('/payments/:id/otp', auth, validate({ params: idParams, body: paymentV.otpSchema }), paymentController.otp);
+router.post('/payments/:id/upi', auth, validate({ params: idParams, body: paymentV.upiSchema }), paymentController.upi);
+router.post('/payments/:id/cancel', auth, validate({ params: idParams }), paymentController.cancel);
+router.get('/payments/:id/approval', validate({ params: idParams, query: paymentV.approvalSchema }), paymentController.approvalDetails);
+router.post('/payments/:id/approve', validate({ params: idParams, body: paymentV.approvalSchema }), paymentController.approve);
+
+// Wallet
+router.get('/wallet', auth, validate({ query: paymentV.walletQuery }), paymentController.myWallet);
 
 // Project Kits
 router.get('/kits', optionalAuth, kitController.listKits);
@@ -135,6 +160,8 @@ router.get('/admin/analytics/category-sales', admin, analyticsController.categor
 router.get('/admin/analytics/top-products', admin, analyticsController.topProducts);
 router.get('/admin/analytics/order-status', admin, analyticsController.orderStatus);
 router.get('/admin/analytics/low-stock', admin, analyticsController.lowStock);
+router.get('/admin/payments', admin, validate({ query: paymentV.listPaymentsQuery }), paymentController.adminList);
+router.get('/admin/wallet-transactions', admin, validate({ query: paymentV.listWalletQuery }), paymentController.adminWallet);
 router.post('/uploads', admin, uploadImage, imageUploaded);
 
 export default router;

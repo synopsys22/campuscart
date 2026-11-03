@@ -1,11 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Package } from 'lucide-react';
+import { Package, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link, useParams } from 'react-router-dom';
 import { orderApi } from '../../api/index.js';
+import { useDeliveryOptions } from '../../components/delivery.jsx';
 import { SuccessMark, useSmoothList } from '../../components/motion.jsx';
-import { OrderTimeline } from '../../components/orders.jsx';
+import { DeliveryCodeCard, OrderTimeline, ReturnStatus, TrackingCard } from '../../components/orders.jsx';
 import { ProductImage } from '../../components/product.jsx';
 import {
   EmptyState,
@@ -14,17 +15,27 @@ import {
   Modal,
   Pagination,
   PathCrumbs,
+  SelectField,
   SkeletonRows,
   Spinner,
   StatusBadge,
+  TextArea,
   TextField,
 } from '../../components/ui.jsx';
 import { usePageTitle } from '../../hooks/shop.js';
-import { formatDate, formatINR, PAYMENT_LABELS } from '../../utils/format.js';
+import {
+  DELIVERY_LABELS,
+  formatDate,
+  formatDay,
+  formatINR,
+  PAYMENT_LABELS,
+  refundNote,
+  statusLabel,
+} from '../../utils/format.js';
 import { NotFound } from '../NotFound.jsx';
 
 const CANCELLABLE = ['Pending', 'Confirmed'];
-const FILTERS = ['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'];
+const FILTERS = ['All', 'Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned'];
 
 export function OrderSuccess() {
   usePageTitle('Order placed');
@@ -35,15 +46,21 @@ export function OrderSuccess() {
   });
   if (isLoading) return <Spinner />;
   if (isError) return <div className="container page"><ErrorState error={error} onRetry={refetch} /></div>;
+  const pickup = order.delivery?.method === 'pickup';
+  const paid = order.payment.status === 'Paid';
   return (
     <div className="container page success">
       <SuccessMark />
       <h1>Your order is placed</h1>
       <p className="mono">{order.orderNumber}</p>
       <p className="muted">
-        Total {formatINR(order.total)}, paid by {PAYMENT_LABELS[order.payment.method]}. Expected by {formatDate(order.estimatedDelivery)}.
+        {formatINR(order.total)} {paid ? 'paid by' : 'to pay by'} {PAYMENT_LABELS[order.payment.method]}
+        {order.payment.detail && ` (${order.payment.detail})`}.{' '}
+        {pickup
+          ? `Ready to collect at ${order.delivery.pickupPoint} from ${formatDay(order.estimatedDelivery)}, ${order.delivery.pickupSlot}.`
+          : `${DELIVERY_LABELS[order.delivery?.method ?? 'standard']}, arriving by ${formatDay(order.estimatedDelivery)}.`}
       </p>
-      {order.payment.transactionRef && <p className="small muted mono">Demo reference {order.payment.transactionRef}</p>}
+      {order.payment.transactionRef && <p className="small muted mono">Payment reference {order.payment.transactionRef}</p>}
       <div className="row success-actions">
         <Link to={`/account/orders/${order._id}`} className="btn btn-primary">Track this order</Link>
         <Link to="/products" className="btn">Keep shopping</Link>
@@ -104,6 +121,7 @@ export function MyOrders() {
                 <span className="mono">{order.orderNumber}</span>
                 <span className="small muted">
                   {formatDate(order.createdAt)}, {order.items.length} product{order.items.length === 1 ? '' : 's'}
+                  {order.delivery?.method && order.delivery.method !== 'standard' && `, ${DELIVERY_LABELS[order.delivery.method]}`}
                 </span>
               </div>
               <StatusBadge status={order.status} />
@@ -117,20 +135,31 @@ export function MyOrders() {
   );
 }
 
-function CancelDialog({ order, onClose }) {
+function useOrderUpdated(order) {
   const queryClient = useQueryClient();
+  return (updated) => {
+    queryClient.setQueryData(['order', order._id], { ...updated, user: order.user });
+    queryClient.invalidateQueries({ queryKey: ['order', order._id] });
+    queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+    queryClient.invalidateQueries({ queryKey: ['product'] });
+    queryClient.invalidateQueries({ queryKey: ['wallet'] });
+  };
+}
+
+function CancelDialog({ order, onClose }) {
   const [reason, setReason] = useState('');
+  const updated = useOrderUpdated(order);
   const cancel = useMutation({
     mutationFn: () => orderApi.cancel(order._id, reason),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(['order', order._id], { ...updated, user: order.user });
-      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['product'] });
+    onSuccess: (result) => {
+      updated(result);
       toast.success(`Cancelled ${order.orderNumber}`);
       onClose();
     },
   });
+  const paid = order.payment.status === 'Paid';
+  const toWallet = order.payment.method === 'WALLET';
   return (
     <Modal title="Cancel this order?" onClose={onClose}>
       <form
@@ -141,8 +170,8 @@ function CancelDialog({ order, onClose }) {
         }}
       >
         <p className="muted">
-          {order.payment.status === 'Paid'
-            ? 'The demo payment will be marked as refunded, and the items go back into stock.'
+          {paid
+            ? `${formatINR(order.total)} goes back to ${toWallet ? 'your CampusCart wallet' : order.payment.detail || 'the account that paid'}, and the items go back into stock.`
             : 'The items go back into stock.'}
         </p>
         <TextField label="Reason (optional)" value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -151,6 +180,50 @@ function CancelDialog({ order, onClose }) {
           <button type="button" className="btn btn-quiet" onClick={onClose}>Keep order</button>
           <button type="submit" className="btn btn-danger" disabled={cancel.isPending}>
             {cancel.isPending ? 'Cancelling...' : 'Cancel order'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function ReturnDialog({ order, onClose }) {
+  const options = useDeliveryOptions();
+  const [reason, setReason] = useState('');
+  const [comment, setComment] = useState('');
+  const updated = useOrderUpdated(order);
+  const request = useMutation({
+    mutationFn: () => orderApi.requestReturn(order._id, { reason, comment }),
+    onSuccess: (result) => {
+      updated(result);
+      toast.success('Return requested');
+      onClose();
+    },
+  });
+  const toWallet = !['MOCK_CARD', 'MOCK_UPI'].includes(order.payment.method);
+  return (
+    <Modal title="Return this order" onClose={onClose}>
+      <form
+        className="stack"
+        onSubmit={(event) => {
+          event.preventDefault();
+          request.mutate();
+        }}
+      >
+        <p className="muted">
+          Once the store approves it, the items are collected and {formatINR(order.total)} is refunded to{' '}
+          {toWallet ? 'your CampusCart wallet' : order.payment.detail || 'the account that paid'}.
+        </p>
+        <SelectField label="Why are you returning it?" value={reason} onChange={(e) => setReason(e.target.value)} error={request.error?.fieldErrors?.reason}>
+          <option value="">Choose a reason</option>
+          {options.data?.returnReasons.map((value) => <option key={value} value={value}>{value}</option>)}
+        </SelectField>
+        <TextArea label="Anything else? (optional)" rows={3} value={comment} onChange={(e) => setComment(e.target.value)} />
+        {request.error && !request.error.fieldErrors && <FormError error={request.error} />}
+        <div className="row modal-actions">
+          <button type="button" className="btn btn-quiet" onClick={onClose}>Keep it</button>
+          <button type="submit" className="btn btn-primary" disabled={request.isPending || !reason}>
+            {request.isPending ? 'Sending...' : 'Request return'}
           </button>
         </div>
       </form>
@@ -188,31 +261,44 @@ export function OrderTotals({ order }) {
           <dd className="summary-good">-{formatINR(order.discount)}</dd>
         </div>
       )}
-      <div><dt>Shipping</dt><dd>{order.shippingFee === 0 ? 'Free' : formatINR(order.shippingFee)}</dd></div>
+      <div>
+        <dt>{DELIVERY_LABELS[order.delivery?.method ?? 'standard']}</dt>
+        <dd>{order.shippingFee === 0 ? 'Free' : formatINR(order.shippingFee)}</dd>
+      </div>
       <div className="summary-total"><dt>Total</dt><dd>{formatINR(order.total)}</dd></div>
     </dl>
   );
 }
 
-export function OrderFacts({ order }) {
+export function OrderFacts({ order, forAdmin = false }) {
   const a = order.shippingAddress;
+  const pickup = order.delivery?.method === 'pickup';
+  const refund = refundNote(order, { forAdmin });
+  const open = !['Cancelled', 'Delivered', 'Returned'].includes(order.status);
   return (
     <dl className="review-facts">
       <div>
-        <dt className="muted small">Deliver to</dt>
-        <dd>{[a.line1, a.line2, a.city, a.state, a.pincode].filter(Boolean).join(', ')}</dd>
+        <dt className="muted small">{pickup ? 'Pick up at' : 'Deliver to'}</dt>
+        <dd>
+          {pickup
+            ? `${order.delivery.pickupPoint}, ${order.delivery.pickupSlot}`
+            : [a?.line1, a?.line2, a?.city, a?.state, a?.pincode].filter(Boolean).join(', ')}
+        </dd>
       </div>
       <div>
         <dt className="muted small">Payment</dt>
         <dd className="row">
           {PAYMENT_LABELS[order.payment.method]} <StatusBadge status={order.payment.status} />
         </dd>
+        {order.payment.detail && <dd className="small muted">{order.payment.detail}</dd>}
         {order.payment.transactionRef && <dd className="small muted mono">{order.payment.transactionRef}</dd>}
+        {refund && <dd className="small summary-good">{refund}</dd>}
       </div>
-      {order.status !== 'Cancelled' && order.status !== 'Delivered' && (
+      {open && (
         <div>
-          <dt className="muted small">Expected by</dt>
-          <dd>{formatDate(order.estimatedDelivery)}</dd>
+          <dt className="muted small">{pickup ? 'Ready from' : 'Expected by'}</dt>
+          <dd>{formatDay(order.estimatedDelivery)}</dd>
+          <dd className="small muted">{DELIVERY_LABELS[order.delivery?.method ?? 'standard']}</dd>
         </div>
       )}
       {order.cancelReason && (
@@ -225,9 +311,24 @@ export function OrderFacts({ order }) {
   );
 }
 
+function ReturnArea({ order, onRequest }) {
+  if (order.returnRequest) return <ReturnStatus order={order} />;
+  if (order.status !== 'Delivered' || !order.returnWindowEndsAt) return null;
+  const open = new Date(order.returnWindowEndsAt) > new Date();
+  if (!open) return <p className="small muted">The return window for this order closed on {formatDate(order.returnWindowEndsAt)}.</p>;
+  return (
+    <div className="row-between return-offer">
+      <p className="small">Not right? You can return this order until <strong>{formatDay(order.returnWindowEndsAt)}</strong>.</p>
+      <button type="button" className="btn btn-small" onClick={onRequest}>
+        <RotateCcw size={15} aria-hidden="true" /> Return this order
+      </button>
+    </div>
+  );
+}
+
 export function OrderDetail() {
   const { id } = useParams();
-  const [cancelling, setCancelling] = useState(false);
+  const [dialog, setDialog] = useState(null);
   const { data: order, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['order', id],
     queryFn: () => orderApi.get(id),
@@ -239,6 +340,7 @@ export function OrderDetail() {
   if ([400, 404].includes(error?.status)) return <NotFound message="This order doesn't exist, or it belongs to another account." />;
   if (isError) return <ErrorState error={error} onRetry={refetch} />;
 
+  const method = order.delivery?.method ?? 'standard';
   return (
     <div className="stack-lg">
       <PathCrumbs parts={[{ label: 'orders', to: '/account/orders' }, { label: order.orderNumber }]} />
@@ -248,23 +350,27 @@ export function OrderDetail() {
           <p className="small muted">Placed on {formatDate(order.createdAt)}</p>
         </div>
         <div className="row">
-          <StatusBadge status={order.status} />
+          <StatusBadge status={order.status} label={statusLabel(order.status, method)} />
           {CANCELLABLE.includes(order.status) && (
-            <button type="button" className="btn btn-quiet btn-small" onClick={() => setCancelling(true)}>Cancel order</button>
+            <button type="button" className="btn btn-quiet btn-small" onClick={() => setDialog('cancel')}>Cancel order</button>
           )}
         </div>
       </div>
+      <DeliveryCodeCard order={order} />
       <section aria-labelledby="tracking-heading" className="stack">
         <h2 id="tracking-heading">Tracking</h2>
+        <TrackingCard order={order} />
         <OrderTimeline order={order} />
       </section>
+      <ReturnArea order={order} onRequest={() => setDialog('return')} />
       <section aria-labelledby="items-heading" className="stack">
         <h2 id="items-heading">Items</h2>
         <OrderItems order={order} showReviewLinks />
         <OrderTotals order={order} />
       </section>
       <OrderFacts order={order} />
-      {cancelling && <CancelDialog order={order} onClose={() => setCancelling(false)} />}
+      {dialog === 'cancel' && <CancelDialog order={order} onClose={() => setDialog(null)} />}
+      {dialog === 'return' && <ReturnDialog order={order} onClose={() => setDialog(null)} />}
     </div>
   );
 }

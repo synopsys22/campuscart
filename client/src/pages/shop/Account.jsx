@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { KeyRound, MapPin, MessageSquare, Package, User, Wrench } from 'lucide-react';
+import { KeyRound, MapPin, MessageSquare, Package, User, Wallet, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link, Outlet, useLocation } from 'react-router-dom';
@@ -25,7 +25,8 @@ import { ReviewForm } from '../store/ProductDetail.jsx';
 
 const LINKS = [
   { to: '/account', label: 'Profile', end: true, icon: User, hint: 'Your own details.' },
-  { to: '/account/orders', label: 'Orders', icon: Package, hint: 'Only your own orders. Track them, or cancel one before it ships.' },
+  { to: '/account/orders', label: 'Orders', icon: Package, hint: 'Only your own orders. Track them, cancel one before it ships, or return one after delivery.' },
+  { to: '/account/wallet', label: 'Wallet', icon: Wallet, hint: 'Your CampusCart balance: add money, pay with it and see every refund.' },
   { to: '/account/addresses', label: 'Addresses', icon: MapPin, hint: 'Where your orders can be delivered.' },
   { to: '/account/reviews', label: 'Reviews', icon: MessageSquare, hint: 'Reviews you have written for products you bought.' },
   { to: '/account/setups', label: 'Saved builds', icon: Wrench, hint: 'Setups you have saved from Build Your Setup.' },

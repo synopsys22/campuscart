@@ -1419,7 +1419,7 @@
 
 .attention-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
@@ -1950,4 +1950,447 @@
   .admin-strip-note {
     display: none;
   }
+}
+
+/* Delivery choices: the pincode check on product pages and the options at checkout */
+.pincode-check {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.pincode-title {
+  color: var(--muted);
+}
+
+.pincode-form {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 260px;
+}
+
+.pincode-form .input {
+  min-width: 0;
+}
+
+.eta-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.eta-list li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.eta-list svg {
+  color: var(--accent);
+}
+
+.choice-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.choice-price {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.choice > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.choice-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* The demo payment gateway */
+.gateway {
+  gap: var(--space-4);
+}
+
+.pay-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--raised);
+}
+
+.pay-amount {
+  font-size: var(--text-2xl);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.pay-timer {
+  white-space: nowrap;
+}
+
+.pay-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.pay-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-self: flex-start;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg-alt);
+}
+
+.pay-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.pay-tabs button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.page-tabs {
+  margin-bottom: var(--space-2);
+}
+
+.card-number {
+  position: relative;
+}
+
+.card-brand {
+  position: absolute;
+  top: 2.05rem;
+  right: var(--space-3);
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.test-cards {
+  padding: var(--space-3);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+}
+
+.test-cards summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.test-cards ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-block: var(--space-2);
+}
+
+.test-cards li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.test-card-label {
+  display: block;
+}
+
+.otp-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.otp-intro svg {
+  flex: none;
+  color: var(--success);
+}
+
+.otp-input {
+  font-size: var(--text-xl);
+  letter-spacing: 0.4em;
+  text-align: center;
+}
+
+.upi-qr {
+  align-items: center;
+  text-align: center;
+}
+
+/* A QR code needs dark modules on a light ground in both themes, or phones can't read it. */
+.qr-frame {
+  display: inline-flex;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: #ffffff;
+  box-shadow: var(--shadow-md);
+}
+
+.upi-waiting,
+.pay-result {
+  align-items: center;
+  padding-block: var(--space-4);
+  text-align: center;
+}
+
+.pay-result .row {
+  justify-content: center;
+}
+
+.pay-failed-icon {
+  color: var(--danger);
+}
+
+/* Tracking, delivery code and returns on an order */
+.tracking-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.tracking-number {
+  gap: var(--space-1);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.code-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  background: var(--accent-faint);
+}
+
+.code-card > svg {
+  flex: none;
+  margin-top: 4px;
+  color: var(--accent);
+}
+
+.code-card h2 {
+  font-size: var(--text-md);
+}
+
+.code-digits {
+  margin-block: var(--space-1) var(--space-2);
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  line-height: 1;
+}
+
+.return-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.return-approved {
+  border-left-color: var(--success);
+}
+
+.return-rejected {
+  border-left-color: var(--danger);
+}
+
+.return-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-2) var(--space-4);
+}
+
+.return-offer {
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+}
+
+.timeline-returned .timeline-pad {
+  border-color: var(--info);
+  background: var(--info);
+}
+
+.status-cell {
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* Wallet */
+.wallet-grid {
+  align-items: stretch;
+}
+
+.wallet-balance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background-color: var(--accent-fill);
+  background-image: var(--accent-gradient);
+  box-shadow: var(--glow);
+  color: var(--on-accent);
+}
+
+.wallet-balance h2 {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.wallet-amount {
+  font-size: var(--text-3xl);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.wallet-demo {
+  margin-top: auto;
+  opacity: 0.8;
+}
+
+.statement-line {
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+}
+
+.figures dd {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.figures dt {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+/* Public parcel tracking */
+.track-form {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 460px;
+  margin-bottom: var(--space-5);
+}
+
+.track-form .input {
+  min-width: 0;
+}
+
+.track-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--raised);
+}
+
+.track-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--accent-fill);
+  background-image: var(--accent-gradient-bright);
+  transition: width 600ms ease;
+}
+
+.track-facts {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* The page a phone opens after scanning the UPI QR code */
+.approve-page {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: var(--space-4);
+  background: var(--bg);
+}
+
+.approve-card {
+  width: min(400px, 100%);
+  align-items: center;
+  padding: var(--space-6) var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.approve-done {
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .attention-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .pay-head {
+    flex-direction: column;
+  }
+
+  .code-card {
+    padding: var(--space-4);
+  }
+
+  .code-digits {
+    font-size: var(--text-2xl);
+  }
+}
+
+.nowrap {
+  white-space: nowrap;
 }

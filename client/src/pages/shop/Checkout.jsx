@@ -1,30 +1,31 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Banknote, CreditCard, Smartphone } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Banknote, CreditCard, Smartphone, Wallet } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { orderApi, profileApi } from '../../api/index.js';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { orderApi, profileApi, walletApi } from '../../api/index.js';
 import { AddressForm } from '../../components/AddressForm.jsx';
+import { DeliveryMethodPicker, PickupPicker, useDeliveryEstimate, useDeliveryOptions } from '../../components/delivery.jsx';
 import { Enter } from '../../components/motion.jsx';
+import { PaymentGateway } from '../../components/payment.jsx';
 import { ProductImage } from '../../components/product.jsx';
 import { ErrorState, PathCrumbs, SkeletonRows, Spinner } from '../../components/ui.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useCart, usePageTitle } from '../../hooks/shop.js';
-import { formatINR, PAYMENT_LABELS } from '../../utils/format.js';
+import { DELIVERY_LABELS, formatDay, formatINR, PAYMENT_LABELS } from '../../utils/format.js';
 import { OrderSummaryRows } from './Cart.jsx';
 
-const PAYMENT_OPTIONS = [
-  { id: 'COD', icon: Banknote, help: 'Pay when your order arrives.' },
-  { id: 'MOCK_UPI', icon: Smartphone, help: 'A simulated UPI payment. No money moves.' },
-  { id: 'MOCK_CARD', icon: CreditCard, help: 'A simulated card payment. No card details are asked for.' },
-];
-const PROCESSING_MS = 1400;
+const GATEWAY = ['MOCK_UPI', 'MOCK_CARD'];
 
 const describeAddress = (a) =>
   [a.line1, a.line2, a.city, a.state, a.pincode].filter(Boolean).join(', ');
 
+export function useWalletBalance() {
+  return useQuery({ queryKey: ['wallet', 'balance'], queryFn: () => walletApi.get({ limit: 1 }).then((page) => page.summary.balance) });
+}
+
 function Steps({ step }) {
-  const steps = ['Address', 'Payment', 'Review'];
+  const steps = ['Delivery', 'Payment', 'Review'];
   return (
     <ol className="steps" aria-label="Checkout steps">
       {steps.map((label, index) => (
@@ -41,7 +42,7 @@ function Steps({ step }) {
   );
 }
 
-function AddressStep({ selectedId, onSelect, onContinue }) {
+function AddressChooser({ selectedId, onSelect }) {
   const { user, setUser } = useAuth();
   const [adding, setAdding] = useState(user.addresses.length === 0);
   const add = useMutation({
@@ -54,9 +55,9 @@ function AddressStep({ selectedId, onSelect, onContinue }) {
   });
 
   return (
-    <section className="stack" aria-labelledby="address-heading">
-      <h2 id="address-heading">Where should we deliver?</h2>
-      <div role="radiogroup" aria-labelledby="address-heading" className="choice-list">
+    <fieldset className="plain-fieldset stack">
+      <legend><strong>Deliver to</strong></legend>
+      <div role="radiogroup" aria-label="Delivery address" className="choice-list">
         {user.addresses.map((address) => (
           <label key={address._id} className={`choice ${selectedId === address._id ? 'choice-on' : ''}`}>
             <input type="radio" name="address" checked={selectedId === address._id} onChange={() => onSelect(address._id)} />
@@ -76,23 +77,72 @@ function AddressStep({ selectedId, onSelect, onContinue }) {
           onCancel={user.addresses.length > 0 ? () => setAdding(false) : undefined}
         />
       ) : (
-        <div className="row">
-          <button type="button" className="btn btn-quiet" onClick={() => setAdding(true)}>Add a new address</button>
-          <button type="button" className="btn btn-primary" disabled={!selectedId} onClick={onContinue}>Continue to payment</button>
+        <div>
+          <button type="button" className="btn btn-quiet btn-small" onClick={() => setAdding(true)}>Add a new address</button>
         </div>
       )}
+    </fieldset>
+  );
+}
+
+function DeliveryStep({ cart, choice, setChoice, address, estimate, onContinue }) {
+  const options = useDeliveryOptions();
+  const pickup = choice.method === 'pickup';
+  const unserviceable = !pickup && estimate && !estimate.serviceable;
+  const ready = pickup ? Boolean(choice.pickupPoint && choice.pickupSlot) : Boolean(address) && !unserviceable;
+
+  return (
+    <section className="stack" aria-labelledby="delivery-heading">
+      <h2 id="delivery-heading">How should we get it to you?</h2>
+      <DeliveryMethodPicker
+        options={cart.pricing.deliveryOptions}
+        estimate={estimate}
+        value={choice.method}
+        onChange={(method) => setChoice((current) => ({ ...current, method }))}
+      />
+      {pickup ? (
+        options.data && (
+          <PickupPicker
+            points={options.data.pickupPoints}
+            slots={options.data.pickupSlots}
+            point={choice.pickupPoint}
+            slot={choice.pickupSlot}
+            onPoint={(pickupPoint) => setChoice((current) => ({ ...current, pickupPoint }))}
+            onSlot={(pickupSlot) => setChoice((current) => ({ ...current, pickupSlot }))}
+          />
+        )
+      ) : (
+        <AddressChooser selectedId={choice.addressId} onSelect={(addressId) => setChoice((current) => ({ ...current, addressId }))} />
+      )}
+      {unserviceable && <p className="small form-error" role="alert">{estimate.message}</p>}
+      <div className="row">
+        <button type="button" className="btn btn-primary" disabled={!ready} onClick={onContinue}>Continue to payment</button>
+      </div>
     </section>
   );
 }
 
-function PaymentStep({ method, onSelect, onBack, onContinue }) {
+function PaymentStep({ method, onSelect, total, pickup, onBack, onContinue }) {
+  const balance = useWalletBalance();
+  const walletShort = balance.data !== undefined && balance.data < total;
+  const options = [
+    { id: 'COD', icon: Banknote, help: pickup ? 'Pay in cash when you collect it.' : 'Pay in cash when your order arrives.' },
+    { id: 'MOCK_UPI', icon: Smartphone, help: 'Scan a QR code or approve a request in your UPI app.' },
+    { id: 'MOCK_CARD', icon: CreditCard, help: 'Debit or credit card, with an OTP from your bank.' },
+    {
+      id: 'WALLET',
+      icon: Wallet,
+      help: balance.data === undefined ? 'Pay from your CampusCart balance.' : `Balance ${formatINR(balance.data)}.${walletShort ? ' Not enough for this order.' : ''}`,
+      disabled: walletShort,
+    },
+  ];
   return (
     <section className="stack" aria-labelledby="payment-heading">
       <h2 id="payment-heading">How do you want to pay?</h2>
       <div role="radiogroup" aria-labelledby="payment-heading" className="choice-list">
-        {PAYMENT_OPTIONS.map(({ id, icon: Icon, help }) => (
-          <label key={id} className={`choice ${method === id ? 'choice-on' : ''}`}>
-            <input type="radio" name="payment" checked={method === id} onChange={() => onSelect(id)} />
+        {options.map(({ id, icon: Icon, help, disabled }) => (
+          <label key={id} className={`choice ${method === id ? 'choice-on' : ''} ${disabled ? 'choice-disabled' : ''}`}>
+            <input type="radio" name="payment" checked={method === id} disabled={disabled} onChange={() => onSelect(id)} />
             <Icon size={20} aria-hidden="true" />
             <span>
               <strong>{PAYMENT_LABELS[id]}</strong>
@@ -101,7 +151,12 @@ function PaymentStep({ method, onSelect, onBack, onContinue }) {
           </label>
         ))}
       </div>
-      <p className="small notice">This is a demo store. Nothing here takes a real payment.</p>
+      {walletShort && (
+        <p className="small muted">
+          <Link to="/account/wallet" className="text-link">Add money to your wallet</Link> to pay with it.
+        </p>
+      )}
+      <p className="small notice">This is a demo store. Card and UPI payments use a practice gateway, and no real money moves.</p>
       <div className="row">
         <button type="button" className="btn btn-quiet" onClick={onBack}>Back</button>
         <button type="button" className="btn btn-primary" onClick={onContinue}>Review order</button>
@@ -110,14 +165,23 @@ function PaymentStep({ method, onSelect, onBack, onContinue }) {
   );
 }
 
-function ReviewStep({ cart, address, method, isPlacing, onBack, onPlace }) {
+function ReviewStep({ cart, choice, address, pickupPoint, pickupSlot, expected, method, total, isPlacing, onBack, onPlace }) {
+  const pays = GATEWAY.includes(method);
   return (
     <section className="stack" aria-labelledby="review-heading">
       <h2 id="review-heading">Check your order</h2>
       <dl className="review-facts">
         <div>
-          <dt className="muted small">Deliver to</dt>
-          <dd><strong>{address.label}</strong>: {describeAddress(address)}</dd>
+          <dt className="muted small">{choice.method === 'pickup' ? 'Pick up at' : 'Deliver to'}</dt>
+          <dd>
+            {choice.method === 'pickup'
+              ? <><strong>{pickupPoint?.name}</strong>, {pickupSlot?.label}</>
+              : <><strong>{address.label}</strong>: {describeAddress(address)}</>}
+          </dd>
+        </div>
+        <div>
+          <dt className="muted small">{DELIVERY_LABELS[choice.method]}</dt>
+          <dd>{expected ? `${choice.method === 'pickup' ? 'Ready from' : 'Arrives by'} ${formatDay(expected)}` : 'Date shown after ordering'}</dd>
         </div>
         <div>
           <dt className="muted small">Payment</dt>
@@ -139,7 +203,9 @@ function ReviewStep({ cart, address, method, isPlacing, onBack, onPlace }) {
       <div className="row">
         <button type="button" className="btn btn-quiet" disabled={isPlacing} onClick={onBack}>Back</button>
         <button type="button" className="btn btn-primary btn-large" disabled={isPlacing} onClick={onPlace}>
-          {isPlacing ? (method === 'COD' ? 'Placing your order...' : 'Processing payment...') : `Place order for ${formatINR(cart.pricing.total)}`}
+          {isPlacing
+            ? method === 'WALLET' ? 'Paying from your wallet...' : 'Placing your order...'
+            : pays ? `Pay ${formatINR(total)}` : `Place order for ${formatINR(total)}`}
         </button>
       </div>
     </section>
@@ -152,24 +218,48 @@ export default function Checkout() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { data: cart, isLoading, isError, error, refetch } = useCart();
+  const options = useDeliveryOptions();
   const [step, setStep] = useState(0);
-  const [addressId, setAddressId] = useState(null);
+  const [choice, setChoice] = useState({ method: 'standard', addressId: null, pickupPoint: null, pickupSlot: null });
   const [method, setMethod] = useState('COD');
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
-    if (!addressId && user.addresses.length > 0) {
-      setAddressId((user.addresses.find((a) => a.isDefault) ?? user.addresses[0])._id);
+    if (!choice.addressId && user.addresses.length > 0) {
+      const preferred = user.addresses.find((a) => a.isDefault) ?? user.addresses[0];
+      setChoice((current) => ({ ...current, addressId: preferred._id }));
     }
-  }, [user.addresses, addressId]);
+  }, [user.addresses, choice.addressId]);
 
-  const address = user.addresses.find((a) => a._id === addressId);
+  const address = user.addresses.find((a) => a._id === choice.addressId);
+  const pickup = choice.method === 'pickup';
+  const estimateQuery = useDeliveryEstimate(address?.pincode ?? '600001');
+  const estimate = estimateQuery.data;
+  const expected = pickup ? estimate?.pickup?.date : estimate?.serviceable ? estimate[choice.method]?.date : null;
+  const pickupPoint = options.data?.pickupPoints.find((p) => p.id === choice.pickupPoint);
+  const pickupSlot = options.data?.pickupSlots.find((s) => s.id === choice.pickupSlot);
+
+  // The summary shows the fee for the chosen delivery. The server charges the same.
+  const pricing = useMemo(() => {
+    if (!cart) return null;
+    const fee = cart.pricing.deliveryOptions.find((option) => option.id === choice.method)?.fee ?? cart.pricing.shippingFee;
+    return { ...cart.pricing, shippingFee: fee, total: cart.pricing.subtotal - cart.pricing.discount + fee };
+  }, [cart, choice.method]);
 
   const place = useMutation({
-    mutationFn: async () => {
-      // The mock methods pause briefly, so it reads like a payment being processed.
-      if (method !== 'COD') await new Promise((resolve) => setTimeout(resolve, PROCESSING_MS));
-      const { label, line1, line2, city, state, pincode } = address;
-      return orderApi.place({ address: { label, line1, line2, city, state, pincode }, paymentMethod: method });
+    mutationFn: (paymentId) => {
+      const body = {
+        delivery: pickup
+          ? { method: 'pickup', pickupPoint: choice.pickupPoint, pickupSlot: choice.pickupSlot }
+          : { method: choice.method },
+        paymentMethod: method,
+        ...(paymentId && { paymentId }),
+      };
+      if (!pickup) {
+        const { label, line1, line2, city, state, pincode } = address;
+        body.address = { label, line1, line2, city, state, pincode };
+      }
+      return orderApi.place(body);
     },
     onSuccess: (order) => {
       // Stops the empty-cart redirect below from running before the success page opens.
@@ -177,13 +267,19 @@ export default function Checkout() {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
     },
     // The refreshed cart shows what went wrong, such as an item that has just sold out.
     onError: (failure) => {
-      toast.error(failure.message);
+      setPaying(false);
+      toast.error(failure.message, { duration: 6000 });
       queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
     },
   });
+
+  const gatewayRequest = useMemo(() => ({ purpose: 'order', deliveryMethod: choice.method }), [choice.method]);
+  const onPaid = useCallback((payment) => place.mutateAsync(payment._id).catch(() => {}), [place]);
 
   if (isLoading) return <div className="container page"><SkeletonRows /></div>;
   if (isError) return <div className="container page"><ErrorState error={error} onRetry={refetch} /></div>;
@@ -197,25 +293,37 @@ export default function Checkout() {
       <Steps step={step} />
       <div className="two-col">
         <Enter key={step} from={{ x: 16 }}>
-          {step === 0 && <AddressStep selectedId={addressId} onSelect={setAddressId} onContinue={() => setStep(1)} />}
-          {step === 1 && <PaymentStep method={method} onSelect={setMethod} onBack={() => setStep(0)} onContinue={() => setStep(2)} />}
-          {step === 2 && address && (
+          {step === 0 && (
+            <DeliveryStep cart={cart} choice={choice} setChoice={setChoice} address={address} estimate={estimate} onContinue={() => setStep(1)} />
+          )}
+          {step === 1 && (
+            <PaymentStep method={method} onSelect={setMethod} total={pricing.total} pickup={pickup} onBack={() => setStep(0)} onContinue={() => setStep(2)} />
+          )}
+          {step === 2 && (pickup || address) && (
             <ReviewStep
               cart={cart}
+              choice={choice}
               address={address}
+              pickupPoint={pickupPoint}
+              pickupSlot={pickupSlot}
+              expected={expected}
               method={method}
+              total={pricing.total}
               isPlacing={place.isPending}
               onBack={() => setStep(1)}
-              onPlace={() => place.mutate()}
+              onPlace={() => (GATEWAY.includes(method) ? setPaying(true) : place.mutate())}
             />
           )}
         </Enter>
         <aside className="summary">
           <h2>Order summary</h2>
           {cart.couponCode && !cart.couponError && <p className="small">Coupon <strong className="mono">{cart.couponCode}</strong> applied.</p>}
-          <OrderSummaryRows pricing={cart.pricing} />
+          <OrderSummaryRows pricing={pricing} deliveryLabel={DELIVERY_LABELS[choice.method]} />
         </aside>
       </div>
+      {paying && (
+        <PaymentGateway method={method} request={gatewayRequest} onPaid={onPaid} onClose={() => setPaying(false)} />
+      )}
     </div>
   );
 }

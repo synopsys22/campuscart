@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { ORDER_STATUSES, PAYMENT_METHODS } from '../models/index.js';
+import { GATEWAY_METHODS, ORDER_STATUSES, PAYMENT_METHODS, RETURN_REASONS, RETURN_STATUSES } from '../models/index.js';
+import { DELIVERY_METHODS, PICKUP_POINTS, PICKUP_SLOTS } from '../services/delivery.service.js';
 import { addressSchema, objectId, pagination } from './common.js';
 
 const quantity = z.coerce.number().int('Quantity must be a whole number.').min(1, 'Quantity must be at least 1.').max(99);
@@ -11,14 +12,44 @@ export const applyCouponSchema = z.object({
   code: z.string().trim().min(1, 'Enter a coupon code.').max(40).toUpperCase(),
 });
 
-export const placeOrderSchema = z.object({
-  address: addressSchema,
-  paymentMethod: z.enum(PAYMENT_METHODS, { message: 'Choose a payment method.' }),
-});
+export const pincodeSchema = z.string().trim().regex(/^\d{6}$/, 'Enter a 6-digit pincode.');
+
+export const deliveryChoiceSchema = z
+  .object({
+    method: z.enum(DELIVERY_METHODS, { message: 'Choose how you want it delivered.' }).default('standard'),
+    pickupPoint: z.string().optional(),
+    pickupSlot: z.string().optional(),
+  })
+  .superRefine((choice, ctx) => {
+    if (choice.method !== 'pickup') return;
+    if (!PICKUP_POINTS.some((point) => point.id === choice.pickupPoint)) {
+      ctx.addIssue({ code: 'custom', path: ['pickupPoint'], message: 'Choose a pickup point.' });
+    }
+    if (!PICKUP_SLOTS.some((slot) => slot.id === choice.pickupSlot)) {
+      ctx.addIssue({ code: 'custom', path: ['pickupSlot'], message: 'Choose a pickup time.' });
+    }
+  });
+
+export const placeOrderSchema = z
+  .object({
+    delivery: deliveryChoiceSchema.default({ method: 'standard' }),
+    address: addressSchema.optional(),
+    paymentMethod: z.enum(PAYMENT_METHODS, { message: 'Choose a payment method.' }),
+    paymentId: objectId.optional(),
+  })
+  .superRefine((body, ctx) => {
+    if (body.delivery.method !== 'pickup' && !body.address) {
+      ctx.addIssue({ code: 'custom', path: ['address'], message: 'Choose a delivery address.' });
+    }
+    if (GATEWAY_METHODS.includes(body.paymentMethod) && !body.paymentId) {
+      ctx.addIssue({ code: 'custom', path: ['paymentId'], message: 'Complete the payment first.' });
+    }
+  });
 
 export const listOrdersQuery = z.object({
   ...pagination,
   status: z.enum(ORDER_STATUSES).optional(),
+  returnStatus: z.enum(RETURN_STATUSES).optional(),
   search: z.string().trim().max(100).optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
@@ -29,9 +60,35 @@ export const myOrdersQuery = z.object({ ...pagination, status: z.enum(ORDER_STAT
 export const updateOrderStatusSchema = z.object({
   status: z.enum(ORDER_STATUSES),
   note: z.string().trim().max(300).optional(),
+  code: z.string().trim().regex(/^\d{4}$/, 'Enter the 4-digit delivery code.').optional(),
 });
 
 export const cancelOrderSchema = z.object({ reason: z.string().trim().max(300).optional() });
+
+export const requestReturnSchema = z.object({
+  reason: z.enum(RETURN_REASONS, { message: 'Choose a reason for the return.' }),
+  comment: z.string().trim().max(500).default(''),
+});
+
+export const resolveReturnSchema = z
+  .object({
+    decision: z.enum(['approve', 'reject']),
+    note: z.string().trim().max(300).default(''),
+  })
+  .refine((body) => body.decision === 'approve' || body.note.length > 0, {
+    message: 'Tell the customer why the return was rejected.',
+    path: ['note'],
+  });
+
+export const deliveryEstimateQuery = z.object({ pincode: pincodeSchema });
+
+export const trackingParams = z.object({
+  trackingNumber: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^CCT\d{10}$/, 'Tracking numbers look like CCT followed by 10 digits.'),
+});
 
 const reviewFields = {
   rating: z.coerce.number().int().min(1, 'Choose 1 to 5 stars.').max(5, 'Choose 1 to 5 stars.'),

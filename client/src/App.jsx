@@ -15,6 +15,7 @@ import {
 import Cart from './pages/shop/Cart.jsx';
 import Checkout from './pages/shop/Checkout.jsx';
 import { MyOrders, OrderDetail, OrderSuccess } from './pages/shop/Orders.jsx';
+import Wallet from './pages/shop/Wallet.jsx';
 import Wishlist from './pages/shop/Wishlist.jsx';
 import { Login, Register } from './pages/store/Auth.jsx';
 import Catalog from './pages/store/Catalog.jsx';
@@ -22,8 +23,10 @@ import Categories from './pages/store/Categories.jsx';
 import Compare from './pages/store/Compare.jsx';
 import Home from './pages/store/Home.jsx';
 import { KitDetail, KitList } from './pages/store/Kits.jsx';
+import PayApprove from './pages/store/PayApprove.jsx';
 import ProductDetail from './pages/store/ProductDetail.jsx';
 import SetupBuilder from './pages/store/SetupBuilder.jsx';
+import Track from './pages/store/Track.jsx';
 
 // The admin area, with its charts, loads only when an admin opens it.
 const AdminRoutes = lazy(() => import('./pages/admin/AdminRoutes.jsx'));
@@ -73,6 +76,8 @@ function RequireAdmin() {
 export function App() {
   return (
     <Routes>
+      {/* Opened on the phone that scanned a UPI QR code, so it has no store header or login. */}
+      <Route path="pay/:id" element={<PayApprove />} />
       <Route element={<StoreLayout />}>
         <Route index element={<Home />} />
         <Route path="products" element={<Catalog />} />
@@ -82,6 +87,8 @@ export function App() {
         <Route path="kits/:slug" element={<KitDetail />} />
         <Route path="setup-builder" element={<SetupBuilder />} />
         <Route path="compare" element={<Compare />} />
+        <Route path="track" element={<Track />} />
+        <Route path="track/:trackingNumber" element={<Track />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
 
@@ -94,6 +101,7 @@ export function App() {
             <Route index element={<Profile />} />
             <Route path="orders" element={<MyOrders />} />
             <Route path="orders/:id" element={<OrderDetail />} />
+            <Route path="wallet" element={<Wallet />} />
             <Route path="addresses" element={<Addresses />} />
             <Route path="reviews" element={<MyReviews />} />
             <Route path="setups" element={<MySetups />} />

@@ -107,7 +107,15 @@ describe('analytics figures', () => {
     const { bearer } = await scenario();
     const { body } = await get(bearer, 'order-status');
     const counts = Object.fromEntries(body.data.map((row) => [row.status, row.count]));
-    expect(counts).toEqual({ Pending: 1, Confirmed: 0, Shipped: 0, Delivered: 1, Cancelled: 1 });
+    expect(counts).toEqual({
+      Pending: 1,
+      Confirmed: 0,
+      Shipped: 0,
+      'Out for Delivery': 0,
+      Delivered: 1,
+      Cancelled: 1,
+      Returned: 0,
+    });
   });
 
   it('lists low-stock products, lowest first, skipping inactive ones', async () => {
